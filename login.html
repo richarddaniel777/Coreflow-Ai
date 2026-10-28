@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f9">
+  <title>Log in · CoreFlow AI</title>
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <a class="brand" href="./login.html" aria-label="CoreFlow AI home"><span class="brand-mark">C</span>CoreFlow <span class="brand-ai">AI</span></a>
+    <p class="eyebrow">CUSTOMER MANAGEMENT, MADE SIMPLE</p>
+    <h1 id="form-title">Welcome back</h1>
+    <p class="muted">Keep your enquiries and follow-ups moving.</p>
+    <div class="mode-switch" aria-label="Account access">
+      <button type="button" data-mode="login">Log in</button><button type="button" data-mode="signup">Sign up</button>
+    </div>
+    <form id="auth-form">
+      <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required>
+      <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="6" required>
+      <button class="button button-primary button-full" type="submit">Log in</button>
+      <p id="form-message" class="form-message" role="status" aria-live="polite"></p>
+    </form>
+    <p class="auth-switch"><span id="auth-switch">New to CoreFlow AI?</span> <button type="button" class="text-button" data-mode="signup">Sign up</button></p>
+  </main>
+  <script type="module" src="./js/pages/auth.js"></script>
+</body>
+</html>

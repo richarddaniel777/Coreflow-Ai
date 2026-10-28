@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7f9">
+  <title>CoreFlow AI</title>
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body class="app-page">
+  <div id="app-shell" class="app-shell" hidden>
+    <header class="topbar">
+      <a class="brand" href="./index.html"><span class="brand-mark">C</span>CoreFlow <span class="brand-ai">AI</span></a>
+      <div class="account-actions"><span id="account-email" class="account-email"></span><button id="logout-button" class="button button-quiet" type="button">Log out</button></div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar" aria-label="Main navigation"><p class="nav-label">WORKSPACE</p>
+        <nav>
+          <a href="#dashboard" data-page="dashboard" aria-current="true"><span class="nav-icon">▦</span>Dashboard</a>
+          <a href="#leads" data-page="leads" aria-current="false"><span class="nav-icon">◇</span>Leads</a>
+          <a href="#settings" data-page="settings" aria-current="false"><span class="nav-icon">⚙</span>Settings</a>
+        </nav><div class="sidebar-foot">Your business, in good flow.</div>
+      </aside>
+      <main class="main-content"><p class="eyebrow">OVERVIEW</p><h1 id="page-title">Dashboard</h1>
+        <p id="page-description" class="muted">Your sales dashboard will appear here.</p>
+        <div class="placeholder-card"><div class="placeholder-icon">✦</div><h2>A clearer view of every opportunity</h2><p>Your workspace is ready. Add leads and follow-ups as we build out your sales tools.</p></div>
+        <p id="app-message" class="form-message" role="status" aria-live="polite"></p>
+      </main>
+    </div>
+    <nav class="mobile-nav" aria-label="Main navigation">
+      <a href="#dashboard" data-page="dashboard" aria-current="true"><span>▦</span>Dashboard</a>
+      <a href="#leads" data-page="leads" aria-current="false"><span>◇</span>Leads</a>
+      <a href="#settings" data-page="settings" aria-current="false"><span>⚙</span>Settings</a>
+    </nav>
+  </div>
+  <script type="module" src="./js/pages/app.js"></script>
+</body>
+</html>
