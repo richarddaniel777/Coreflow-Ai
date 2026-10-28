@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#f6f7f9">
   <title>Log in · CoreFlow AI</title>
   <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="./css/design-system.css">
 </head>
 <body class="auth-page">
   <main class="auth-card">
@@ -17,12 +18,28 @@
       <button type="button" data-mode="login">Log in</button><button type="button" data-mode="signup">Sign up</button>
     </div>
     <form id="auth-form">
-      <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required>
-      <label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="6" required>
-      <button class="button button-primary button-full" type="submit">Log in</button>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required>
+      <div class="label-row">
+        <label for="password">Password</label>
+        <span id="password-rule" class="field-note" hidden>At least 8 characters</span>
+      </div>
+      <div class="password-control">
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button class="password-toggle" type="button" data-password-toggle="password" aria-label="Show password" aria-pressed="false">Show</button>
+      </div>
+      <div id="confirm-password-row" hidden>
+        <label for="confirm-password">Confirm password</label>
+        <div class="password-control">
+          <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password">
+          <button class="password-toggle" type="button" data-password-toggle="confirm-password" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+      </div>
+      <div id="forgot-row" class="forgot-row"><button id="forgot-password-link" class="text-button" type="button">Forgot password?</button></div>
+      <button id="auth-submit" class="button button-primary button-full" type="submit">Log in</button>
       <p id="form-message" class="form-message" role="status" aria-live="polite"></p>
     </form>
-    <p class="auth-switch"><span id="auth-switch">New to CoreFlow AI?</span> <button type="button" class="text-button" data-mode="signup">Sign up</button></p>
+    <p class="auth-switch"><span id="auth-switch">New to CoreFlow AI?</span> <button id="auth-switch-link" type="button" class="text-button" data-mode="signup">Sign up</button></p>
   </main>
   <script type="module" src="./js/pages/auth.js"></script>
 </body>

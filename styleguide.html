@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f6">
+  <title>Design foundation · CoreFlow AI</title>
+  <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="./css/design-system.css">
+</head>
+<body class="styleguide-page">
+  <main class="styleguide">
+    <header class="styleguide__header">
+      <a class="brand" href="./index.html"><span class="brand-mark">C</span>CoreFlow <span class="brand-ai">AI</span></a>
+      <p class="eyebrow">UI FOUNDATION</p>
+      <h1>Clear, consistent, ready to grow.</h1>
+      <p>A practical set of colors, spacing, typography and reusable interface components for CoreFlow AI.</p>
+    </header>
+
+    <section class="styleguide__section">
+      <h2>Color palette</h2>
+      <div class="styleguide__grid">
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-primary)"></div>Primary</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-background)"></div>Background</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-surface);border:1px solid var(--color-border)"></div>Surface</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-text)"></div>Text</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-muted)"></div>Muted text</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-border)"></div>Border</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-success)"></div>Success</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-warning)"></div>Warning</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-danger)"></div>Danger</div>
+        <div class="styleguide__token"><div class="styleguide__swatch" style="background:var(--color-info)"></div>Info</div>
+      </div>
+    </section>
+
+    <section class="styleguide__section">
+      <h2>Typography and spacing</h2>
+      <div class="ui-card">
+        <p class="eyebrow">SMALL BUSINESS SALES</p>
+        <h1 style="font-size:var(--font-size-3xl);margin:0 0 var(--space-2)">A clear view of every opportunity</h1>
+        <p class="muted">Use the spacing tokens from <code>--space-1</code> (4px) through <code>--space-16</code> (64px), with a readable type scale from 12px to 36px.</p>
+      </div>
+    </section>
+
+    <section class="styleguide__section">
+      <h2>Buttons</h2>
+      <div class="ui-card styleguide__row">
+        <button class="ui-button ui-button--primary" type="button">Primary action</button>
+        <button class="ui-button ui-button--secondary" type="button">Secondary</button>
+        <button class="ui-button ui-button--danger" type="button">Delete</button>
+        <button class="ui-button ui-button--ghost" type="button">Ghost</button>
+        <button class="ui-button ui-button--primary" type="button" disabled>Disabled</button>
+        <button class="ui-button ui-button--primary is-loading" type="button" aria-busy="true">Saving</button>
+      </div>
+    </section>
+
+    <section class="styleguide__section">
+      <h2>Form fields</h2>
+      <div class="ui-card styleguide__grid">
+        <div class="ui-field"><label class="ui-label" for="sample-business">Business name</label><input class="ui-input" id="sample-business" placeholder="e.g. Northside Studio"><p class="ui-hint">Shown on your workspace.</p></div>
+        <div class="ui-field"><label class="ui-label" for="sample-error">Email address</label><input class="ui-input" id="sample-error" type="email" aria-invalid="true" value="not-an-email"><p class="ui-error">Enter a valid email address.</p></div>
+        <div class="ui-field"><label class="ui-label" for="sample-stage">Buying stage</label><select class="ui-select" id="sample-stage"><option>New enquiry</option><option>Contacted</option><option>Quoted</option></select></div>
+        <div class="ui-field"><label class="ui-label" for="sample-notes">Notes</label><textarea class="ui-textarea" id="sample-notes" rows="3" placeholder="Add a short note"></textarea></div>
+      </div>
+    </section>
+
+    <section class="styleguide__section">
+      <h2>Cards and badges</h2>
+      <div class="styleguide__grid">
+        <article class="ui-card"><div class="ui-card__header"><h3 class="ui-card__title">Lead summary</h3><span class="ui-badge ui-badge--info">Website</span></div><p>Keep key details easy to scan, with a clear title and concise supporting information.</p><div class="styleguide__row"><span class="ui-badge ui-badge--neutral">New</span><span class="ui-badge ui-badge--success">Won</span><span class="ui-badge ui-badge--warning">Needs attention</span><span class="ui-badge ui-badge--danger">Overdue</span><span class="ui-badge ui-badge--info">Follow-up</span></div></article>
+        <article class="ui-card"><div class="ui-card__header"><h3 class="ui-card__title">Next step</h3><span class="ui-badge ui-badge--warning">Due today</span></div><p>Use cards to group related actions, metrics or lead information.</p></article>
+      </div>
+    </section>
+
+    <section class="styleguide__section">
+      <h2>Responsive table</h2>
+      <div class="ui-table-wrap">
+        <table class="ui-table ui-table--responsive">
+          <thead><tr><th>Lead</th><th>Stage</th><th>Value</th><th>Next follow-up</th></tr></thead>
+          <tbody>
+            <tr><td data-label="Lead">Amina Yusuf</td><td data-label="Stage"><span class="ui-badge ui-badge--info">Quoted</span></td><td data-label="Value">$1,250</td><td data-label="Next follow-up">Today</td></tr>
+            <tr><td data-label="Lead">Harbor Supply</td><td data-label="Stage"><span class="ui-badge ui-badge--warning">Negotiating</span></td><td data-label="Value">$840</td><td data-label="Next follow-up">Oct 31</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="styleguide__section">
+      <h2>Dialog and toast messages</h2>
+      <div class="styleguide__grid">
+        <dialog class="ui-dialog" open aria-labelledby="dialog-title"><h3 id="dialog-title">Archive this lead?</h3><p class="muted">You can restore it later from your archived leads.</p><div class="ui-dialog__actions"><button class="ui-button ui-button--secondary" type="button">Cancel</button><button class="ui-button ui-button--primary" type="button">Archive lead</button></div></dialog>
+        <div class="styleguide__section" style="margin:0"><div class="ui-toast ui-toast--success" role="status"><strong>Saved</strong><span>Your changes have been saved.</span></div><div class="ui-toast ui-toast--warning" role="status"><strong>Reminder</strong><span>This follow-up is due today.</span></div><div class="ui-toast ui-toast--danger" role="alert"><strong>Couldn’t save</strong><span>Check your connection and try again.</span></div></div>
+      </div>
+    </section>
+
+    <section class="styleguide__section">
+      <h2>Empty and loading states</h2>
+      <div class="styleguide__grid">
+        <div class="ui-empty"><div class="ui-empty__icon" aria-hidden="true">◇</div><h3>No leads yet</h3><p>New enquiries from any channel will appear here when you add them.</p><button class="ui-button ui-button--primary" type="button">Add a lead</button></div>
+        <div class="ui-card"><div class="ui-loading" role="status"><span class="ui-spinner" aria-hidden="true"></span>Loading your leads…</div></div>
+      </div>
+    </section>
+
+    <footer class="styleguide__footer">CoreFlow AI · Design foundation</footer>
+  </main>
+</body>
+</html>
