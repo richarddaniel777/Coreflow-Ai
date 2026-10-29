@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    const recoveryHash = new URLSearchParams(window.location.hash.slice(1));
+    if (recoveryHash.get('type') === 'recovery') {
+      window.location.replace(window.location.origin + '/reset-password.html' + window.location.search + window.location.hash);
+    }
+  </script>
   <meta name="theme-color" content="#f6f7f9">
   <title>CoreFlow AI</title>
   <link rel="stylesheet" href="./css/app.css">

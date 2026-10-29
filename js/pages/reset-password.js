@@ -52,13 +52,13 @@ const hasRecoveryMarker = urlParams.get('type') === 'recovery'
   || hashParams.get('type') === 'recovery'
   || urlParams.has('code');
 if (urlParams.has('error') || hashParams.has('error')) {
-  setMessage('This reset link is invalid or has expired. Request another reset link.', 'error');
+  setMessage('This reset link is invalid or has expired. Go back to log in and request a fresh link.', 'error');
 } else {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) setMessage('We could not verify this reset link. Request another one.', 'error');
     else if (session && hasRecoveryMarker) showRecoveryForm();
-    else if (!recoveryReady) setMessage('This reset link is invalid or has expired. Request another reset link.', 'error');
+    else if (!recoveryReady) setMessage('This reset link is invalid or has expired. Go back to log in and request a fresh link.', 'error');
   } catch {
     setMessage('We could not verify this reset link. Check your connection and try again.', 'error');
   }
@@ -86,7 +86,13 @@ form.addEventListener('submit', async (event) => {
       return;
     }
     setMessage('Password updated. Returning to log in…', 'success');
-    try { await supabase.auth.signOut(); } catch { /* Password update already succeeded. */ }
+    const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
+    if (signOutError) {
+      setMessage('Your password was updated, but we could not end this session. Please try logging out, then log in again.', 'error');
+      submit.disabled = false;
+      submit.textContent = 'Update password';
+      return;
+    }
     location.replace('./login.html?password=updated');
   } catch (error) {
     setMessage(passwordError(error), 'error');

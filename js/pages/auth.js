@@ -125,7 +125,7 @@ forgotButton.addEventListener('click', async () => {
   forgotButton.disabled = true;
   setMessage('Sending reset link…', 'loading');
   try {
-    const redirectTo = new URL('./reset-password.html', location.href).href;
+    const redirectTo = window.location.origin + '/reset-password.html';
     const { error } = await supabase.auth.resetPasswordForEmail(emailInput.value.trim(), { redirectTo });
     if (error) setMessage(readableAuthError(error, 'reset'), 'error');
     else setMessage('If that email exists, we sent a link.', 'success');
