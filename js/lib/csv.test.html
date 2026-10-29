@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSV helper checks · CoreFlow AI</title>
+  <style>body{font:16px/1.5 system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#172b3a}li{padding:.45rem 0}.pass{color:#176b45}.fail{color:#b42318}#summary{font-weight:700}</style>
+</head>
+<body>
+  <h1>CSV helper checks</h1>
+  <p>Serve this project locally and open this page. These checks run in the browser without a test framework.</p>
+  <ol id="results"></ol>
+  <p id="summary" role="status">Running…</p>
+  <script type="module">
+    import { parseCsv, parseMoney, normalizeSource, normalizePreferredChannel, findDuplicateIndexes, findDuplicateMatches, normalizePhone } from './csv.js';
+    const checks = [
+      ['quoted commas', () => { const out = parseCsv('name,notes\nAmina,"call, next week"'); return out.rows[0][1] === 'call, next week'; }],
+      ['quoted newlines', () => { const out = parseCsv('name,notes\r\nAmina,"first line\nsecond line"'); return out.rows.length === 1 && out.rows[0][1] === 'first line\nsecond line'; }],
+      ['BOM', () => { const out = parseCsv('\uFEFFname,email\nAmina,amina@example.com'); return out.headers[0] === 'name' && out.rows.length === 1; }],
+      ['semicolon delimiter', () => { const out = parseCsv('name;source\nAmina;walk-in'); return out.delimiter === ';' && out.rows[0][1] === 'walk-in'; }],
+      ['European money 1.234,56', () => parseMoney('1.234,56') === 1234.56],
+      ['US currency $1,234.56', () => parseMoney('$1,234.56') === 1234.56],
+      ['channel and source aliases', () => normalizeSource('IG').value === 'instagram' && normalizeSource('insta').value === 'instagram' && normalizeSource('FB').value === 'facebook' && normalizeSource('LI').value === 'linkedin' && normalizeSource('X').value === 'x_twitter' && normalizeSource('twitter').value === 'x_twitter' && normalizeSource('walk in').value === 'walk_in' && normalizeSource('call').value === 'phone_call' && normalizeSource('web').value === 'website' && normalizePreferredChannel('LI').value === 'linkedin' && normalizePreferredChannel('X').value === 'x_twitter'],
+      ['same email ignores case and surrounding spaces', () => {
+        const matches = findDuplicateMatches([{ validation: { lead: { email: '  jane@example.com  ', phone: null } } }], [{ name: 'Jane Doe', email: 'Jane@Example.com ' }]);
+        return matches.get(0)?.kind === 'exact' && matches.get(0).matches.some((match) => match.type === 'email' && match.name === 'Jane Doe');
+      }],
+      ['same phone ignores formatting', () => {
+        const matches = findDuplicateMatches([{ lead: { phone: '+234 801-234-5678' } }], [{ name: 'Amina Bello', phone: '+234 (801) 234 5678' }]);
+        return matches.get(0)?.kind === 'exact' && matches.get(0).matches.some((match) => match.type === 'phone');
+      }],
+      ['two blank emails do not match', () => findDuplicateMatches([{ lead: { email: '', phone: '', social_handle: '' } }], [{ name: 'No contact', email: ' ', phone: null, social_handle: null }]).size === 0],
+      ['repeated email in the same file marks only the later row', () => {
+        const matches = findDuplicateMatches([{ validation: { lead: { name: 'First', email: 'same@example.com' } } }, { validation: { lead: { name: 'Second', email: ' SAME@example.com ' } } }]);
+        return !matches.has(0) && matches.get(1)?.kind === 'exact' && matches.get(1).matches.some((match) => match.name === 'First');
+      }],
+      ['same handle and source is a possible duplicate', () => {
+        const matches = findDuplicateMatches([{ lead: { name: 'CSV lead', social_handle: '@JaneBuilds', source: 'linkedin' } }], [{ name: 'Jane Doe', social_handle: 'janebuilds', source: ' LinkedIn ' }]);
+        return matches.get(0)?.kind === 'possible' && matches.get(0).matches.some((match) => match.type === 'social_handle_and_source' && match.name === 'Jane Doe');
+      }],
+      ['existing and repeated duplicate detection', () => {
+        const rows = [
+          { lead: { email: 'EXISTING@example.com', phone: null } },
+          { lead: { email: null, phone: '1 (555) 000-1111' } },
+          { lead: { email: null, phone: '15550001111' } },
+          { lead: { email: 'new@example.com', phone: null } },
+          { lead: { email: 'NEW@example.com', phone: null } },
+        ];
+        const duplicates = findDuplicateIndexes(rows, [{ email: 'existing@example.com' }]);
+        return duplicates.has(0) && duplicates.has(2) && duplicates.has(4) && !duplicates.has(1) && !duplicates.has(3) && normalizePhone('+1 (555) 000-1111') === '+15550001111';
+      }],
+    ];
+    const list = document.querySelector('#results'); let passed = 0;
+    for (const [label, run] of checks) {
+      const item = document.createElement('li');
+      try { const ok = run(); item.textContent = (ok ? 'PASS — ' : 'FAIL — ') + label; item.className = ok ? 'pass' : 'fail'; if (ok) passed += 1; }
+      catch (error) { item.textContent = 'FAIL — ' + label + ' (' + error.message + ')'; item.className = 'fail'; }
+      list.append(item);
+    }
+    const summary = document.querySelector('#summary'); summary.textContent = passed + ' of ' + checks.length + ' checks passed.'; summary.className = passed === checks.length ? 'pass' : 'fail';
+  </script>
+</body>
+</html>

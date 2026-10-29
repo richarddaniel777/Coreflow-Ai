@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./css/app.css">
   <link rel="stylesheet" href="./css/design-system.css">
   <link rel="stylesheet" href="./css/leads.css">
+  <link rel="stylesheet" href="./css/csv-import.css">
 </head>
 <body class="app-page">
   <div id="app" class="app-shell" hidden>
@@ -24,7 +25,7 @@
         </nav><div class="sidebar-foot">Your business, in good flow.</div>
       </aside>
       <main class="main-content leads-main">
-        <div class="leads-title-row"><div><p class="eyebrow">SALES PIPELINE</p><h1>Leads</h1><p class="muted">Keep enquiries, conversations and next steps together.</p></div><button id="add-lead-button" class="ui-button ui-button--primary" type="button">＋ Add lead</button></div>
+        <div class="leads-title-row"><div><p class="eyebrow">SALES PIPELINE</p><h1>Leads</h1><p class="muted">Keep enquiries, conversations and next steps together.</p></div><div class="lead-title-actions"><button id="import-csv-button" class="ui-button ui-button--secondary" type="button">Import CSV</button><button id="add-lead-button" class="ui-button ui-button--primary" type="button">＋ Add lead</button></div></div>
         <p id="page-notice" class="form-message" role="status" aria-live="polite"></p>
         <section class="lead-filters" aria-label="Search and filter leads">
           <div class="ui-field filter-search"><label class="ui-label" for="lead-search">Search leads</label><input id="lead-search" class="ui-input" type="search" placeholder="Name, company, phone or email"></div>
@@ -43,6 +44,10 @@
       <a href="./index.html"><span>▦</span>Dashboard</a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a>
     </nav>
   </div>
+  <dialog id="csv-import-dialog" class="ui-dialog csv-dialog" aria-labelledby="csv-dialog-title">
+    <div class="csv-dialog__header"><div><p class="eyebrow">LEAD IMPORT</p><h2 id="csv-dialog-title">Import leads from CSV</h2></div><button class="ui-button ui-button--ghost" type="button" data-csv-close aria-label="Close import dialog">Close</button></div>
+    <div id="csv-import-content"></div>
+  </dialog>
   <dialog id="lead-dialog" class="ui-dialog lead-editor-dialog" aria-labelledby="lead-dialog-title">
     <div class="lead-dialog-header"><div><p class="eyebrow">LEAD INFORMATION</p><h2 id="lead-dialog-title">Add a lead</h2></div><button id="cancel-lead" class="ui-button ui-button--ghost" type="button" aria-label="Close dialog">Close</button></div>
     <form id="lead-form" class="lead-form">

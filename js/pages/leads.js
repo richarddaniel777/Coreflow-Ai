@@ -3,6 +3,7 @@ import { createLead, deleteLead, getBusinessProfile, getLead, getLeads, updateLe
 import { getActivitiesForLeads } from '../api/activities.js';
 import { makeElement, renderLeadTable, showPageState } from '../ui/leads.js';
 import { getLeadStatuses } from '../lib/leadStatus.js';
+import { initCsvImport } from './csvImport.js';
 import { LEAD_SOURCES, PREFERRED_CHANNELS, LEAD_STAGES, stageRequiresLostReason } from '../lib/constants.js';
 
 const app = document.querySelector('#app');
@@ -229,6 +230,13 @@ document.querySelector('#logout-button').addEventListener('click', async (event)
   }
 });
 document.querySelectorAll('[data-nav=leads]').forEach((item) => item.setAttribute('aria-current', 'page'));
+
+initCsvImport({
+  button: document.querySelector('#import-csv-button'),
+  dialog: document.querySelector('#csv-import-dialog'),
+  content: document.querySelector('#csv-import-content'),
+  onImported: loadLeads,
+});
 
 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 if (sessionError || !session) location.replace('./login.html');

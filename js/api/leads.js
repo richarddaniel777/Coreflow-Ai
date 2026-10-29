@@ -7,6 +7,22 @@ export async function getLeads() {
   return data || [];
 }
 
+export async function getAllLeadsForDuplicateCheck() {
+  const pageSize = 1000;
+  const leads = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from('leads')
+      .select('id, name, email, phone, social_handle, source')
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const page = data || [];
+    leads.push(...page);
+    if (page.length < pageSize) return leads;
+  }
+}
+
 export async function getLead(id) {
   const { data, error } = await supabase.from('leads').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
@@ -23,6 +39,13 @@ export async function createLead(values) {
   const { data, error } = await supabase.from('leads').insert(values).select('*').single();
   if (error) throw error;
   return data;
+}
+
+export async function createLeadsBatch(values) {
+  if (!Array.isArray(values) || values.length === 0) return [];
+  const { data, error } = await supabase.from('leads').insert(values).select('*');
+  if (error) throw error;
+  return data || [];
 }
 
 export async function updateLead(id, values, previousStage) {
