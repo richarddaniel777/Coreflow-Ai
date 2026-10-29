@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lead status checks</title>
+  <style>
+    body { font: 16px/1.5 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #172b3a; }
+    li { padding: .5rem 0; } .pass { color: #176b45; } .fail { color: #b42318; }
+    #summary { font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>Lead status checks</h1>
+  <p>These browser checks use local calendar dates and require the site to be served over HTTP.</p>
+  <ol id="results"></ol>
+  <p id="summary" role="status">Running…</p>
+  <script type="module">
+    import { getLeadStatuses, isQuiet, needsReply } from './leadStatus.js';
+
+    const results = document.querySelector('#results');
+    const summary = document.querySelector('#summary');
+    const now = new Date();
+    function daysAgo(days) {
+      const date = new Date(now);
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() - days);
+      return date.toISOString();
+    }
+    function lead(stage = 'new', createdDaysAgo = 0) {
+      return { id: 'test-lead', stage, created_at: daysAgo(createdDaysAgo) };
+    }
+    function activity(type, days, direction = null) {
+      return { type, occurred_at: daysAgo(days), direction };
+    }
+    const checks = [
+      ['New lead with no activity is on track', () => {
+        const item = lead('new', 0);
+        return !isQuiet(item, [], 5) && getLeadStatuses(item, [], 5).onTrack;
+      }],
+      ['3-day-old call is not quiet at a 5-day threshold', () =>
+        !isQuiet(lead(), [activity('call', 3)], 5)],
+      ['10-day-old call is gone quiet at a 5-day threshold', () =>
+        isQuiet(lead(), [activity('call', 10)], 5)],
+      ['Recent note does not refresh a 10-day-old call', () =>
+        isQuiet(lead(), [activity('call', 10), activity('note', 0)], 5)],
+      ['Won and lost leads show closed status only', () =>
+        ['won', 'lost'].every((stage) => {
+          const statuses = getLeadStatuses(lead(stage, 20), [activity('message', 10, 'inbound')], 5);
+          return statuses.closed && !statuses.needsReply && !statuses.goneQuiet && !statuses.onTrack;
+        })],
+      ['Inbound followed by outbound does not need a reply', () => {
+        const item = lead();
+        const timeline = [activity('message', 2, 'inbound'), activity('call', 1, 'outbound')];
+        return !needsReply(item, timeline) && !getLeadStatuses(item, timeline, 5).needsReply;
+      }],
+    ];
+    let passed = 0;
+    for (const [label, check] of checks) {
+      const item = document.createElement('li');
+      try {
+        const ok = check();
+        item.textContent = (ok ? 'PASS — ' : 'FAIL — ') + label;
+        item.className = ok ? 'pass' : 'fail';
+        if (ok) passed += 1;
+      } catch (error) {
+        item.textContent = 'FAIL — ' + label + ' (' + error.message + ')';
+        item.className = 'fail';
+      }
+      results.append(item);
+    }
+    summary.textContent = passed + ' of ' + checks.length + ' checks passed.';
+    summary.className = passed === checks.length ? 'pass' : 'fail';
+  </script>
+</body>
+</html>

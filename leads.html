@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f6">
+  <title>Leads · CoreFlow AI</title>
+  <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="./css/design-system.css">
+  <link rel="stylesheet" href="./css/leads.css">
+</head>
+<body class="app-page">
+  <div id="app" class="app-shell" hidden>
+    <header class="topbar">
+      <a class="brand" href="./index.html"><span class="brand-mark">C</span>CoreFlow <span class="brand-ai">AI</span></a>
+      <div class="account-actions"><span id="account-email" class="account-email"></span><button id="logout-button" class="button button-quiet" type="button">Log out</button></div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar" aria-label="Main navigation"><p class="nav-label">WORKSPACE</p>
+        <nav>
+          <a href="./index.html"><span class="nav-icon">▦</span>Dashboard</a>
+          <a href="./leads.html" data-nav="leads"><span class="nav-icon">◇</span>Leads</a>
+          <a href="./index.html#settings"><span class="nav-icon">⚙</span>Settings</a>
+        </nav><div class="sidebar-foot">Your business, in good flow.</div>
+      </aside>
+      <main class="main-content leads-main">
+        <div class="leads-title-row"><div><p class="eyebrow">SALES PIPELINE</p><h1>Leads</h1><p class="muted">Keep enquiries, conversations and next steps together.</p></div><button id="add-lead-button" class="ui-button ui-button--primary" type="button">＋ Add lead</button></div>
+        <p id="page-notice" class="form-message" role="status" aria-live="polite"></p>
+        <section class="lead-filters" aria-label="Search and filter leads">
+          <div class="ui-field filter-search"><label class="ui-label" for="lead-search">Search leads</label><input id="lead-search" class="ui-input" type="search" placeholder="Name, company, phone or email"></div>
+          <div class="ui-field"><label class="ui-label" for="stage-filter">Stage</label><select id="stage-filter" class="ui-select"></select></div>
+          <div class="ui-field"><label class="ui-label" for="source-filter">Source</label><select id="source-filter" class="ui-select"></select></div>
+          <div class="ui-field"><label class="ui-label" for="status-filter">Status</label><select id="status-filter" class="ui-select"><option value="">All statuses</option><option value="needs_reply">Needs reply</option><option value="gone_quiet">Gone quiet</option></select></div>
+          <div class="ui-field"><label class="ui-label" for="sort-filter">Sort by</label><select id="sort-filter" class="ui-select"><option value="">Last activity</option><option value="deal_value">Deal value</option></select></div>
+        </section>
+        <div class="lead-filter-summary"><span id="active-filter-count" aria-live="polite">No active filters</span><button id="reset-filters" class="ui-button ui-button--ghost" type="button" disabled hidden>Reset filters</button></div>
+        <div class="list-meta"><span id="lead-count">0 leads</span></div>
+        <div id="list-state"></div>
+        <div id="lead-list"></div>
+      </main>
+    </div>
+    <nav class="mobile-nav" aria-label="Main navigation">
+      <a href="./index.html"><span>▦</span>Dashboard</a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a>
+    </nav>
+  </div>
+  <dialog id="lead-dialog" class="ui-dialog lead-editor-dialog" aria-labelledby="lead-dialog-title">
+    <div class="lead-dialog-header"><div><p class="eyebrow">LEAD INFORMATION</p><h2 id="lead-dialog-title">Add a lead</h2></div><button id="cancel-lead" class="ui-button ui-button--ghost" type="button" aria-label="Close dialog">Close</button></div>
+    <form id="lead-form" class="lead-form">
+      <div class="lead-form-grid">
+        <div class="ui-field"><label class="ui-label" for="lead-name">Name *</label><input class="ui-input" id="lead-name" name="name" required maxlength="200" autocomplete="name"></div>
+        <div class="ui-field"><label class="ui-label" for="lead-company">Company</label><input class="ui-input" id="lead-company" name="company" maxlength="200"></div>
+        <div class="ui-field"><label class="ui-label" for="lead-phone">Phone</label><input class="ui-input" id="lead-phone" name="phone" type="tel" autocomplete="tel"></div>
+        <div class="ui-field"><label class="ui-label" for="lead-email">Email</label><input class="ui-input" id="lead-email" name="email" type="email" autocomplete="email"></div>
+        <div class="ui-field"><label class="ui-label" for="lead-handle">Social handle / username</label><input class="ui-input" id="lead-handle" name="social_handle" autocomplete="off"></div>
+        <div class="ui-field"><label class="ui-label" for="lead-source">Source</label><select class="ui-select" id="lead-source" name="source"></select></div>
+        <div class="ui-field"><label class="ui-label" for="lead-preferred">Preferred channel</label><select class="ui-select" id="lead-preferred" name="preferred_channel"></select></div>
+        <div class="ui-field"><label class="ui-label" for="lead-stage">Stage</label><select class="ui-select" id="lead-stage" name="stage"></select></div>
+        <div class="ui-field"><label class="ui-label" for="lead-budget">Budget (<span data-currency-label>USD</span>)</label><input class="ui-input" id="lead-budget" name="budget" type="number" min="0" step="0.01"></div>
+        <div class="ui-field"><label class="ui-label" for="lead-value">Deal value (<span data-currency-label>USD</span>)</label><input class="ui-input" id="lead-value" name="deal_value" type="number" min="0" step="0.01" value="0"></div>
+        <div class="ui-field"><label class="ui-label" for="lead-close-date">Expected close date</label><input class="ui-input" id="lead-close-date" name="expected_close_date" type="date"></div>
+        <div id="lost-reason-field" class="ui-field" hidden><label class="ui-label" for="lead-lost-reason">Lost reason *</label><input class="ui-input" id="lead-lost-reason" name="lost_reason" maxlength="500"></div>
+        <div class="ui-field lead-form-wide"><label class="ui-label" for="lead-interest">Interest</label><textarea class="ui-textarea" id="lead-interest" name="interest" rows="2"></textarea></div>
+        <div class="ui-field lead-form-wide"><label class="ui-label" for="lead-needs">Needs</label><textarea class="ui-textarea" id="lead-needs" name="needs" rows="2"></textarea></div>
+        <div class="ui-field lead-form-wide"><label class="ui-label" for="lead-notes">Notes</label><textarea class="ui-textarea" id="lead-notes" name="notes" rows="3"></textarea></div>
+      </div>
+      <div id="contact-warning" class="contact-warning" role="status" hidden><span>Add a phone number, email or social handle / username if you have one. This is recommended, but optional.</span><button id="contact-warning-close" class="text-button" type="button" aria-label="Dismiss contact reminder">Dismiss</button></div>
+      <div class="lead-form-actions"><button id="save-lead" class="ui-button ui-button--primary" type="submit">Save lead</button><button id="cancel-lead-footer" class="ui-button ui-button--secondary" type="button">Cancel</button></div>
+    </form>
+  </dialog>
+  <script type="module" src="./js/pages/leads.js"></script>
+</body>
+</html>

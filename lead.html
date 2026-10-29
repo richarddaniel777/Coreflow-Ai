@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f6">
+  <title>Lead · CoreFlow AI</title>
+  <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="./css/design-system.css">
+  <link rel="stylesheet" href="./css/leads.css">
+</head>
+<body class="app-page">
+  <div id="app" class="app-shell" hidden>
+    <header class="topbar">
+      <a class="brand" href="./index.html"><span class="brand-mark">C</span>CoreFlow <span class="brand-ai">AI</span></a>
+      <div class="account-actions"><span id="account-email" class="account-email"></span><button id="logout-button" class="button button-quiet" type="button">Log out</button></div>
+    </header>
+    <div class="layout">
+      <aside class="sidebar" aria-label="Main navigation"><p class="nav-label">WORKSPACE</p>
+        <nav><a href="./index.html"><span class="nav-icon">▦</span>Dashboard</a><a href="./leads.html" data-nav="leads" aria-current="page"><span class="nav-icon">◇</span>Leads</a><a href="./index.html#settings"><span class="nav-icon">⚙</span>Settings</a></nav>
+        <div class="sidebar-foot">Your business, in good flow.</div>
+      </aside>
+      <main class="main-content detail-main">
+        <button id="activity-back" class="ui-button ui-button--ghost detail-back" type="button">← Back to leads</button>
+        <div class="detail-topline">
+          <div><p class="eyebrow">LEAD RECORD</p><h1 id="detail-heading-title">Lead</h1><p id="detail-company" class="muted"></p></div>
+          <div class="detail-actions"><span id="detail-status" class="ui-badge ui-badge--info">Loading</span><button id="edit-lead-button" class="ui-button ui-button--secondary" type="button">Edit lead</button><button id="delete-lead-button" class="ui-button ui-button--danger" type="button">Delete lead</button></div>
+        </div>
+        <p id="page-notice" class="form-message" role="status" aria-live="polite"></p>
+        <section id="quick-actions" class="quick-actions" aria-label="Contact actions"></section>
+        <section id="detail-content" class="detail-content"></section>
+        <div class="detail-lower-grid">
+          <section class="ui-card interaction-card">
+            <div class="ui-card__header"><div><p class="eyebrow">FOLLOW THROUGH</p><h2 class="ui-card__title">Log interaction</h2></div></div>
+            <form id="interaction-form">
+              <div class="ui-field"><label class="ui-label" for="interaction-type">Type</label><select class="ui-select" id="interaction-type" name="type"></select></div>
+              <div class="interaction-row">
+                <div id="interaction-channel-row" class="ui-field"><label class="ui-label" for="interaction-channel">Channel</label><select class="ui-select" id="interaction-channel" name="channel"><option value="">Choose channel</option></select></div>
+                <div id="interaction-direction-row" class="ui-field"><label class="ui-label" for="interaction-direction">Direction</label><select class="ui-select" id="interaction-direction" name="direction"><option value="">Choose direction</option><option value="inbound">Inbound</option><option value="outbound">Outbound</option></select></div>
+              </div>
+              <div class="ui-field"><label class="ui-label" for="interaction-date">Date and time</label><input class="ui-input" id="interaction-date" name="occurred_at" type="datetime-local" required></div>
+              <div class="ui-field"><label class="ui-label" for="interaction-content">Details</label><textarea class="ui-textarea" id="interaction-content" name="content" rows="4" placeholder="What happened?"></textarea></div>
+              <button id="log-interaction-button" class="ui-button ui-button--primary" type="submit">Log interaction</button>
+            </form>
+          </section>
+          <section class="timeline-panel"><div class="timeline-title"><p class="eyebrow">CONVERSATION HISTORY</p><h2>Activity timeline</h2></div><div id="timeline"></div></section>
+        </div>
+      </main>
+    </div>
+    <nav class="mobile-nav" aria-label="Main navigation"><a href="./index.html"><span>▦</span>Dashboard</a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a></nav>
+  </div>
+  <script type="module" src="./js/pages/lead-detail.js"></script>
+</body>
+</html>
