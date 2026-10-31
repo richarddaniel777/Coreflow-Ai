@@ -1,10 +1,15 @@
 import { supabase } from '../api/supabase.js';
 import { deleteLead, getBusinessProfile, getLead } from '../api/leads.js';
+import { createTask, getTasksForLead } from '../api/tasks.js';
 import { createActivity, getActivitiesForLead } from '../api/activities.js';
-import { getLeadStatuses } from '../lib/leadStatus.js';
+import { getLeadStatuses, isOpen } from '../lib/leadStatus.js';
+import { todayLocalDate, addDays } from '../lib/dates.js';
 import { showPageState, labelForStage } from '../ui/leads.js';
 import { toneForStage, ACTIVITY_TYPES, channelsForActivityType } from '../lib/constants.js';
 import { renderLeadDetails, renderQuickActions, renderTimeline } from '../ui/leadDetail.js';
+import { renderFollowupTasks } from '../ui/followups.js';
+import { createTaskController } from './taskController.js';
+import { refreshAttentionBadge } from '../ui/navigation.js';
 
 const app = document.querySelector('#app');
 const content = document.querySelector('#detail-content');
@@ -12,10 +17,16 @@ const timeline = document.querySelector('#timeline');
 const interactionForm = document.querySelector('#interaction-form');
 const pageNotice = document.querySelector('#page-notice');
 const quickActions = document.querySelector('#quick-actions');
+const followupSection = document.querySelector('#followup-section');
+const followupList = document.querySelector('#followup-list');
+const scheduleTaskForm = document.querySelector('#schedule-task-form');
+const taskPageNotice = document.querySelector('#task-page-notice');
 const leadId = new URLSearchParams(location.search).get('id');
 let lead = null;
 let activities = [];
 let profile = { currency: 'USD', quiet_after_days: 5 };
+let followupTasks = [];
+let taskController;
 
 function setNotice(text, kind = '') {
   pageNotice.textContent = text || '';
@@ -49,6 +60,30 @@ function setDefaultOccurrence() {
   const date = new Date();
   const pad = (number) => String(number).padStart(2, '0');
   interactionForm.elements.occurred_at.value = date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + 'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+}
+function setTaskNotice(text, kind = '') {
+  taskPageNotice.textContent = text || '';
+  taskPageNotice.dataset.kind = kind;
+}
+async function loadFollowupTasks() {
+  if (!lead || !isOpen(lead)) {
+    followupSection.hidden = true;
+    followupTasks = [];
+    return;
+  }
+  followupSection.hidden = false;
+  renderFollowupTasks(followupList, [], taskController || {}, 'loading');
+  try {
+    followupTasks = await getTasksForLead(lead.id);
+    renderFollowupTasks(followupList, followupTasks, taskController);
+  } catch (error) {
+    renderFollowupTasks(followupList, [], taskController || {}, 'error');
+    const retry = document.createElement('button');
+    retry.type = 'button'; retry.className = 'ui-button ui-button--secondary'; retry.textContent = 'Try again';
+    retry.addEventListener('click', loadFollowupTasks);
+    followupList.append(retry);
+    setTaskNotice(error?.message || 'Follow-ups could not be loaded.', 'error');
+  }
 }
 function renderAll() {
   renderLeadDetails(content, lead, activities, profile);
@@ -86,12 +121,16 @@ async function loadDetail() {
       return false;
     }
     content.replaceChildren();
+    scheduleTaskForm.elements.title.value = 'Follow up with ' + lead.name;
+    scheduleTaskForm.elements.due_date.value = scheduleTaskForm.elements.due_date.value || addDays(todayLocalDate(), 1);
     document.querySelector('#detail-heading-title').textContent = lead.name;
     document.querySelector('#detail-company').textContent = lead.company || 'Lead record';
     const status = document.querySelector('#detail-status');
     status.textContent = labelForStage(lead.stage);
     status.className = 'ui-badge ui-badge--' + toneForStage(lead.stage);
     renderAll();
+    await loadFollowupTasks();
+    await refreshAttentionBadge();
     refreshChannelOptions();
     setDefaultOccurrence();
     return true;
@@ -169,6 +208,35 @@ document.querySelector('#logout-button').addEventListener('click', async (event)
   }
 });
 document.querySelector('#activity-back').addEventListener('click', () => location.href = './leads.html');
+taskController = createTaskController({
+  dialog: document.querySelector('#task-compose-dialog'),
+  form: document.querySelector('#task-compose-form'),
+  resolveLead: (id) => lead?.id === id ? lead : null,
+  onChanged: async () => { await loadDetail(); },
+  showNotice: setTaskNotice,
+});
+scheduleTaskForm.elements.due_date.value = addDays(todayLocalDate(), 1);
+scheduleTaskForm.elements.title.value = 'Follow up with ' + (lead?.name || '');
+scheduleTaskForm.addEventListener('click', (event) => {
+  const quick = event.target.closest('[data-quick-due]');
+  if (quick) scheduleTaskForm.elements.due_date.value = addDays(todayLocalDate(), Number(quick.dataset.quickDue));
+});
+scheduleTaskForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!lead || !isOpen(lead) || !scheduleTaskForm.reportValidity()) return;
+  const button = scheduleTaskForm.querySelector('button[type="submit"]');
+  button.disabled = true; button.classList.add('is-loading'); button.textContent = 'Scheduling…';
+  setTaskNotice('');
+  try {
+    await createTask({ lead_id: lead.id, title: scheduleTaskForm.elements.title.value.trim(), due_date: scheduleTaskForm.elements.due_date.value });
+    scheduleTaskForm.elements.title.value = 'Follow up with ' + lead.name;
+    scheduleTaskForm.elements.due_date.value = addDays(todayLocalDate(), 1);
+    await loadFollowupTasks();
+    await refreshAttentionBadge();
+    setTaskNotice('Follow-up scheduled.', 'success');
+  } catch (error) { setTaskNotice(error?.message || 'Follow-up could not be scheduled.', 'error'); }
+  finally { button.disabled = false; button.classList.remove('is-loading'); button.textContent = 'Schedule follow-up'; }
+});
 document.querySelectorAll('[data-nav=leads]').forEach((item) => item.setAttribute('aria-current', 'page'));
 
 const { data: { session }, error: sessionError } = await supabase.auth.getSession();

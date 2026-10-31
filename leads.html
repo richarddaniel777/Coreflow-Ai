@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./css/app.css">
   <link rel="stylesheet" href="./css/design-system.css">
   <link rel="stylesheet" href="./css/leads.css">
+  <link rel="stylesheet" href="./css/followups.css">
   <link rel="stylesheet" href="./css/csv-import.css">
 </head>
 <body class="app-page">
@@ -19,7 +20,7 @@
     <div class="layout">
       <aside class="sidebar" aria-label="Main navigation"><p class="nav-label">WORKSPACE</p>
         <nav>
-          <a href="./index.html"><span class="nav-icon">▦</span>Dashboard</a>
+          <a href="./index.html"><span class="nav-icon">▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a>
           <a href="./leads.html" data-nav="leads"><span class="nav-icon">◇</span>Leads</a>
           <a href="./index.html#settings"><span class="nav-icon">⚙</span>Settings</a>
         </nav><div class="sidebar-foot">Your business, in good flow.</div>
@@ -41,7 +42,7 @@
       </main>
     </div>
     <nav class="mobile-nav" aria-label="Main navigation">
-      <a href="./index.html"><span>▦</span>Dashboard</a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a>
+      <a href="./index.html"><span>▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a>
     </nav>
   </div>
   <dialog id="csv-import-dialog" class="ui-dialog csv-dialog" aria-labelledby="csv-dialog-title">

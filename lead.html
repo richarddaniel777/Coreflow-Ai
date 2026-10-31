@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./css/app.css">
   <link rel="stylesheet" href="./css/design-system.css">
   <link rel="stylesheet" href="./css/leads.css">
+  <link rel="stylesheet" href="./css/followups.css">
 </head>
 <body class="app-page">
   <div id="app" class="app-shell" hidden>
@@ -17,7 +18,7 @@
     </header>
     <div class="layout">
       <aside class="sidebar" aria-label="Main navigation"><p class="nav-label">WORKSPACE</p>
-        <nav><a href="./index.html"><span class="nav-icon">▦</span>Dashboard</a><a href="./leads.html" data-nav="leads" aria-current="page"><span class="nav-icon">◇</span>Leads</a><a href="./index.html#settings"><span class="nav-icon">⚙</span>Settings</a></nav>
+        <nav><a href="./index.html"><span class="nav-icon">▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a><a href="./leads.html" data-nav="leads" aria-current="page"><span class="nav-icon">◇</span>Leads</a><a href="./index.html#settings"><span class="nav-icon">⚙</span>Settings</a></nav>
         <div class="sidebar-foot">Your business, in good flow.</div>
       </aside>
       <main class="main-content detail-main">
@@ -29,6 +30,21 @@
         <p id="page-notice" class="form-message" role="status" aria-live="polite"></p>
         <section id="quick-actions" class="quick-actions" aria-label="Contact actions"></section>
         <section id="detail-content" class="detail-content"></section>
+        <section id="followup-section" class="ui-card followup-section" hidden>
+          <div class="followup-header"><div><p class="eyebrow">NEXT STEPS</p><h2>Follow-ups</h2><p class="muted">Set a reminder to reconnect with this lead.</p></div></div>
+          <form id="schedule-task-form" class="followup-form-grid">
+            <div class="ui-field"><label class="ui-label" for="quick-task-title">Follow-up title</label><input class="ui-input" id="quick-task-title" name="title" required maxlength="200"></div>
+            <div class="ui-field"><label class="ui-label" for="quick-task-date">Due date</label><input class="ui-input" id="quick-task-date" name="due_date" type="date" required></div>
+            <div class="followup-quick-dates" aria-label="Quick due dates">
+              <button class="ui-button ui-button--ghost" type="button" data-quick-due="1">Tomorrow</button>
+              <button class="ui-button ui-button--ghost" type="button" data-quick-due="3">In 3 days</button>
+              <button class="ui-button ui-button--ghost" type="button" data-quick-due="7">Next week</button>
+            </div>
+            <button class="ui-button ui-button--primary" type="submit">Schedule follow-up</button>
+          </form>
+          <p id="task-page-notice" class="form-message" role="status" aria-live="polite"></p>
+          <div id="followup-list" aria-live="polite"></div>
+        </section>
         <div class="detail-lower-grid">
           <section class="ui-card interaction-card">
             <div class="ui-card__header"><div><p class="eyebrow">FOLLOW THROUGH</p><h2 class="ui-card__title">Log interaction</h2></div></div>
@@ -47,8 +63,18 @@
         </div>
       </main>
     </div>
-    <nav class="mobile-nav" aria-label="Main navigation"><a href="./index.html"><span>▦</span>Dashboard</a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a></nav>
+    <nav class="mobile-nav" aria-label="Main navigation"><a href="./index.html"><span>▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a></nav>
   </div>
+<dialog id="task-compose-dialog" class="task-compose-dialog ui-dialog" aria-labelledby="task-compose-heading">
+    <div class="task-compose-dialog__head"><div><h2 id="task-compose-heading" data-task-dialog-title>Schedule follow-up</h2><p data-task-dialog-lead class="muted"></p></div><button class="ui-button ui-button--ghost" type="button" data-task-dialog-close aria-label="Close follow-up dialog">Close</button></div>
+    <form id="task-compose-form">
+      <div class="ui-field"><label class="ui-label" for="compose-task-title">Title</label><input id="compose-task-title" class="ui-input" name="title" maxlength="200" required></div>
+      <div class="ui-field"><label class="ui-label" for="compose-task-date">Due date</label><input id="compose-task-date" class="ui-input" name="due_date" type="date" required></div>
+      <div class="followup-quick-dates" aria-label="Quick due dates"><button class="ui-button ui-button--ghost" type="button" data-due-offset="1">Tomorrow</button><button class="ui-button ui-button--ghost" type="button" data-due-offset="3">In 3 days</button><button class="ui-button ui-button--ghost" type="button" data-due-offset="7">Next week</button></div>
+      <p data-task-dialog-message class="form-message" role="alert" aria-live="polite"></p>
+      <div class="task-compose-dialog__actions"><button data-task-dialog-close class="ui-button ui-button--secondary" type="button">Cancel</button><button data-task-submit class="ui-button ui-button--primary" type="submit">Schedule follow-up</button></div>
+    </form>
+  </dialog>
   <script type="module" src="./js/pages/lead-detail.js"></script>
 </body>
 </html>

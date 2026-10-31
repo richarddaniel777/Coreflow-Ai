@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Date helper checks · CoreFlow AI</title>
+<style>body{font:16px/1.5 system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;color:#172b3a}li{padding:.5rem 0}.pass{color:#176b45}.fail{color:#b42318}#summary{font-weight:700}</style></head>
+<body><h1>Date helper checks</h1><p>These framework-free checks use local calendar dates.</p><ol id="results"></ol><p id="summary" role="status">Running…</p>
+<script type="module">
+  import { todayLocalDate, addDays, wholeDayDifference, relativeDateLabel } from './dates.js';
+  const checks = [
+    ['local midnight keeps the user's local date', () => {
+      const late = new Date(2024, 0, 31, 23, 59);
+      const early = new Date(2024, 1, 1, 0, 1);
+      return todayLocalDate(late) === '2024-01-31' && todayLocalDate(early) === '2024-02-01' && wholeDayDifference(late, early) === 1;
+    }],
+    ['month end adds into the next month', () => addDays('2025-01-31', 1) === '2025-02-01'],
+    ['month end handles a leap year', () => addDays('2024-02-28', 1) === '2024-02-29' && addDays('2024-02-29', 1) === '2024-03-01'],
+    ['non-leap February rolls into March', () => addDays('2023-02-28', 1) === '2023-03-01'],
+    ['whole-day differences use calendar days', () => wholeDayDifference(new Date(2025, 5, 1, 23, 59), new Date(2025, 5, 2, 0, 1)) === 1],
+    ['relative labels reflect local dates', () => relativeDateLabel('2025-06-01', new Date(2025, 5, 3, 0, 1)) === '2 days ago'],
+  ];
+  const list = document.querySelector('#results'); let passed = 0;
+  for (const [label, run] of checks) {
+    const item = document.createElement('li');
+    try { const ok = run(); item.textContent = (ok ? 'PASS — ' : 'FAIL — ') + label; item.className = ok ? 'pass' : 'fail'; if (ok) passed += 1; }
+    catch (error) { item.textContent = 'FAIL — ' + label + ' (' + error.message + ')'; item.className = 'fail'; }
+    list.append(item);
+  }
+  const summary = document.querySelector('#summary'); summary.textContent = passed + ' of ' + checks.length + ' checks passed.'; summary.className = passed === checks.length ? 'pass' : 'fail';
+</script></body></html>

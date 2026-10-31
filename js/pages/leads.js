@@ -4,6 +4,7 @@ import { getActivitiesForLeads } from '../api/activities.js';
 import { makeElement, renderLeadTable, showPageState } from '../ui/leads.js';
 import { getLeadStatuses } from '../lib/leadStatus.js';
 import { initCsvImport } from './csvImport.js';
+import { refreshAttentionBadge } from '../ui/navigation.js';
 import { LEAD_SOURCES, PREFERRED_CHANNELS, LEAD_STAGES, stageRequiresLostReason } from '../lib/constants.js';
 
 const app = document.querySelector('#app');
@@ -243,7 +244,7 @@ if (sessionError || !session) location.replace('./login.html');
 else {
   app.hidden = false;
   document.querySelector('#account-email').textContent = session.user.email || '';
-  await loadLeads();
+  await Promise.all([loadLeads(), refreshAttentionBadge()]);
   const editId = new URLSearchParams(location.search).get('edit');
   if (editId) {
     try {

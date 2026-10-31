@@ -13,6 +13,8 @@
   <title>CoreFlow AI</title>
   <link rel="stylesheet" href="./css/app.css">
   <link rel="stylesheet" href="./css/design-system.css">
+  <link rel="stylesheet" href="./css/followups.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
 </head>
 <body class="app-page">
   <div id="app-shell" class="app-shell" hidden>
@@ -23,23 +25,33 @@
     <div class="layout">
       <aside class="sidebar" aria-label="Main navigation"><p class="nav-label">WORKSPACE</p>
         <nav>
-          <a href="#dashboard" data-page="dashboard" aria-current="true"><span class="nav-icon">▦</span>Dashboard</a>
+          <a href="#dashboard" data-page="dashboard" aria-current="true"><span class="nav-icon">▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a>
           <a href="./leads.html" aria-current="false"><span class="nav-icon">◇</span>Leads</a>
           <a href="#settings" data-page="settings" aria-current="false"><span class="nav-icon">⚙</span>Settings</a>
         </nav><div class="sidebar-foot">Your business, in good flow.</div>
       </aside>
-      <main class="main-content"><p class="eyebrow">OVERVIEW</p><h1 id="page-title">Dashboard</h1>
-        <p id="page-description" class="muted">Your sales dashboard will appear here.</p>
-        <div class="placeholder-card"><div class="placeholder-icon">✦</div><h2>A clearer view of every opportunity</h2><p>Your workspace is ready. Add leads and follow-ups as we build out your sales tools.</p></div>
+      <main class="main-content today-main">
+        <div id="dashboard-page"><p class="eyebrow">FOLLOW THROUGH</p><h1 id="page-title">Today</h1><p id="page-description" class="muted">Your replies and follow-ups that need attention.</p><div id="today-state" aria-live="polite"></div><div id="today-sections"></div></div>
+        <div id="other-page" hidden><p class="eyebrow">WORKSPACE</p><h1 id="other-page-title">Settings</h1><p id="other-page-description" class="muted">Business settings will appear here.</p><div class="placeholder-card"><div class="placeholder-icon">⚙</div><h2>Workspace settings</h2><p>Business profile settings will appear here.</p></div></div>
         <p id="app-message" class="form-message" role="status" aria-live="polite"></p>
       </main>
     </div>
     <nav class="mobile-nav" aria-label="Main navigation">
-      <a href="#dashboard" data-page="dashboard" aria-current="true"><span>▦</span>Dashboard</a>
+      <a href="#dashboard" data-page="dashboard" aria-current="true"><span>▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a>
       <a href="./leads.html" aria-current="false"><span>◇</span>Leads</a>
       <a href="#settings" data-page="settings" aria-current="false"><span>⚙</span>Settings</a>
     </nav>
   </div>
+<dialog id="task-compose-dialog" class="task-compose-dialog ui-dialog" aria-labelledby="task-compose-heading">
+    <div class="task-compose-dialog__head"><div><h2 id="task-compose-heading" data-task-dialog-title>Schedule follow-up</h2><p data-task-dialog-lead class="muted"></p></div><button class="ui-button ui-button--ghost" type="button" data-task-dialog-close aria-label="Close follow-up dialog">Close</button></div>
+    <form id="task-compose-form">
+      <div class="ui-field"><label class="ui-label" for="compose-task-title">Title</label><input id="compose-task-title" class="ui-input" name="title" maxlength="200" required></div>
+      <div class="ui-field"><label class="ui-label" for="compose-task-date">Due date</label><input id="compose-task-date" class="ui-input" name="due_date" type="date" required></div>
+      <div class="followup-quick-dates" aria-label="Quick due dates"><button class="ui-button ui-button--ghost" type="button" data-due-offset="1">Tomorrow</button><button class="ui-button ui-button--ghost" type="button" data-due-offset="3">In 3 days</button><button class="ui-button ui-button--ghost" type="button" data-due-offset="7">Next week</button></div>
+      <p data-task-dialog-message class="form-message" role="alert" aria-live="polite"></p>
+      <div class="task-compose-dialog__actions"><button data-task-dialog-close class="ui-button ui-button--secondary" type="button">Cancel</button><button data-task-submit class="ui-button ui-button--primary" type="submit">Schedule follow-up</button></div>
+    </form>
+  </dialog>
   <script type="module" src="./js/pages/app.js"></script>
 </body>
 </html>
