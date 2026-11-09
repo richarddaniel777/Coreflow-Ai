@@ -79,7 +79,7 @@ export function renderLeadTable(container, leads, activityMap, options) {
   const table = makeElement('table', 'ui-table ui-table--responsive leads-table');
   const thead = makeElement('thead');
   const headRow = makeElement('tr');
-  ['Lead', 'Source', 'Stage', 'Deal value', 'Last activity', 'Status'].forEach((title) => appendText(headRow, 'th', '', title));
+  ['Lead', 'Source', 'Stage', 'AI score', 'Deal value', 'Last activity', 'Status'].forEach((title) => appendText(headRow, 'th', '', title));
   thead.append(headRow);
   const tbody = makeElement('tbody');
   leads.forEach((lead) => {
@@ -95,6 +95,14 @@ export function renderLeadTable(container, leads, activityMap, options) {
     const stage = makeElement('td');
     stage.dataset.label = 'Stage';
     stage.append(badge(labelForStage(lead.stage), toneForStage(lead.stage)));
+    const score = makeElement('td', 'lead-score-cell');
+    score.dataset.label = 'AI score';
+    if (Number.isInteger(lead.ai_score)) {
+      const priority = lead.ai_analysis?.priority;
+      const tone = priority === 'high' ? 'danger' : priority === 'medium' ? 'warning' : priority === 'low' ? 'success' : 'neutral';
+      score.append(badge(String(lead.ai_score) + '/100', tone));
+      if (priority) score.append(badge(priority + ' priority', tone));
+    } else score.append(badge('Not scored', 'neutral'));
     const value = makeElement('td', '', formatMoney(lead.deal_value, options.currency));
     value.dataset.label = 'Deal value';
     const activity = makeElement('td', '', relativeDate(lead.last_activity_at || lead.created_at));
@@ -105,7 +113,7 @@ export function renderLeadTable(container, leads, activityMap, options) {
     statusBadges(lead, activityMap.get(lead.id) || [], options.quietAfterDays).forEach((item) => statusList.append(item));
     
     status.append(statusList);
-    row.append(nameCell, source, stage, value, activity, status);
+    row.append(nameCell, source, stage, score, value, activity, status);
     tbody.append(row);
   });
   table.append(thead, tbody);

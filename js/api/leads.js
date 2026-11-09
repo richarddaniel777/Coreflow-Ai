@@ -29,12 +29,6 @@ export async function getLead(id) {
   return data;
 }
 
-export async function getBusinessProfile() {
-  const { data, error } = await supabase.from('business_profiles').select('currency, quiet_after_days').maybeSingle();
-  if (error) throw error;
-  return data || { currency: 'USD', quiet_after_days: 5 };
-}
-
 export async function createLead(values) {
   const { data, error } = await supabase.from('leads').insert(values).select('*').single();
   if (error) throw error;

@@ -137,7 +137,13 @@ forgotButton.addEventListener('click', async () => {
 });
 
 const resetComplete = new URLSearchParams(location.search).get('password') === 'updated';
+let sessionNotice = '';
+try {
+  sessionNotice = sessionStorage.getItem('coreflow-auth-redirect-message') || '';
+  sessionStorage.removeItem('coreflow-auth-redirect-message');
+} catch { /* Continue with the regular login state if storage is unavailable. */ }
 const { data: { session } } = await supabase.auth.getSession();
-if (session && !resetComplete) location.replace('./index.html');
+if (session && !resetComplete && !sessionNotice) location.replace('./index.html');
 renderMode();
 if (resetComplete) setMessage('Your password has been updated. You can log in with your new password.', 'success');
+else if (sessionNotice) setMessage(sessionNotice, 'error');

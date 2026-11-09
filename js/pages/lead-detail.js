@@ -1,5 +1,6 @@
 import { supabase } from '../api/supabase.js';
-import { deleteLead, getBusinessProfile, getLead } from '../api/leads.js';
+import { deleteLead, getLead } from '../api/leads.js';
+import { loadBusinessProfile, subscribeToBusinessProfile } from '../api/businessProfile.js';
 import { createTask, getTasksForLead } from '../api/tasks.js';
 import { createActivity, getActivitiesForLead } from '../api/activities.js';
 import { getLeadStatuses, isOpen } from '../lib/leadStatus.js';
@@ -10,6 +11,9 @@ import { renderLeadDetails, renderQuickActions, renderTimeline } from '../ui/lea
 import { renderFollowupTasks } from '../ui/followups.js';
 import { createTaskController } from './taskController.js';
 import { refreshAttentionBadge } from '../ui/navigation.js';
+import { scoreLead } from '../api/ai.js';
+import { analysisIsStale, renderAiAnalysis } from '../ui/aiAnalysis.js';
+import { isProfileComplete } from '../lib/businessProfile.js';
 
 const app = document.querySelector('#app');
 const content = document.querySelector('#detail-content');
@@ -24,7 +28,8 @@ const taskPageNotice = document.querySelector('#task-page-notice');
 const leadId = new URLSearchParams(location.search).get('id');
 let lead = null;
 let activities = [];
-let profile = { currency: 'USD', quiet_after_days: 5 };
+let profile = null;
+let profileLoaded = false;
 let followupTasks = [];
 let taskController;
 
@@ -86,7 +91,7 @@ async function loadFollowupTasks() {
   }
 }
 function renderAll() {
-  renderLeadDetails(content, lead, activities, profile);
+  renderLeadDetails(content, lead, activities, profile || { currency: 'USD', quiet_after_days: 5 });
   renderTimeline(timeline, activities);
   renderQuickActions(quickActions, lead, async (value, kind) => {
     try {
@@ -101,6 +106,12 @@ function renderAll() {
   const statusBadge = document.querySelector('#detail-status');
   statusBadge.textContent = statusText;
   statusBadge.className = 'ui-badge ui-badge--' + (statuses.closed ? 'neutral' : statuses.needsReply ? 'warning' : statuses.goneQuiet ? 'danger' : toneForStage(lead.stage));
+  const analysis = lead.ai_analysis && typeof lead.ai_analysis === 'object' ? lead.ai_analysis : null;
+  renderAiAnalysis(document.querySelector('#ai-analysis-panel'), document.querySelector('#ai-score-badge'), analysis);
+  document.querySelector('#ai-score-stale').hidden = !analysisIsStale(lead, activities, analysis);
+  document.querySelector('#score-lead-button').textContent = analysis ? 'Score lead again' : 'Score lead';
+  document.querySelector('#complete-profile-link').hidden = !profileLoaded || isProfileComplete(profile);
+  document.querySelector('#score-lead-button').disabled = !profileLoaded;
 }
 async function loadDetail() {
   showPageState(content, 'loading', 'Loading lead details…');
@@ -111,14 +122,28 @@ async function loadDetail() {
     return false;
   }
   try {
-    const result = await Promise.all([getLead(leadId), getActivitiesForLead(leadId), getBusinessProfile()]);
+    const result = await Promise.all([getLead(leadId), getActivitiesForLead(leadId)]);
     lead = result[0];
     activities = result[1];
-    profile = result[2];
     if (!lead) {
       showPageState(content, 'error', 'This lead could not be found or is no longer available.');
       showPageState(timeline, 'error', 'Lead activity is unavailable.');
       return false;
+    }
+    try {
+      profile = await loadBusinessProfile({ forceRefresh: true, source: 'lead-detail' });
+      profileLoaded = true;
+      const scoreMessage = document.querySelector('#ai-score-message');
+      if (scoreMessage.dataset.kind === 'error' && scoreMessage.textContent.startsWith('Business profile')) {
+        scoreMessage.textContent = '';
+        scoreMessage.dataset.kind = '';
+      }
+    } catch (profileError) {
+      profile = null;
+      profileLoaded = false;
+      const scoreMessage = document.querySelector('#ai-score-message');
+      scoreMessage.textContent = profileError?.message || 'Business profile could not be loaded. Try again.';
+      scoreMessage.dataset.kind = 'error';
     }
     content.replaceChildren();
     scheduleTaskForm.elements.title.value = 'Follow up with ' + lead.name;
@@ -140,6 +165,63 @@ async function loadDetail() {
     return false;
   }
 }
+async function runLeadScoring() {
+  const message = document.querySelector('#ai-score-message');
+  const button = document.querySelector('#score-lead-button');
+  const retryButton = document.querySelector('#retry-score-button');
+  retryButton.hidden = true;
+  if (!profileLoaded || !profile) {
+    message.textContent = 'Business profile could not be loaded. Retry loading this page before scoring.';
+    message.dataset.kind = 'error';
+    document.querySelector('#complete-profile-link').hidden = true;
+    return;
+  }
+  if (!isProfileComplete(profile)) {
+    message.textContent = 'Add at least 10 non-whitespace characters to products/services in Settings before scoring.';
+    message.dataset.kind = 'error';
+    document.querySelector('#complete-profile-link').hidden = false;
+    return;
+  }
+  button.disabled = true; button.classList.add('is-loading'); button.textContent = 'Scoring lead…';
+  message.textContent = 'Reviewing the lead details and recent activity…'; message.dataset.kind = 'loading';
+  try {
+    await scoreLead(lead.id);
+    message.textContent = 'Lead score updated.'; message.dataset.kind = 'success';
+    await loadDetail();
+  } catch (scoreError) {
+    const retryable = ['OVERLOADED', 'RATE_LIMITED', 'INVALID_OUTPUT'].includes(scoreError.providerReason);
+    message.textContent = ['OVERLOADED', 'RATE_LIMITED'].includes(scoreError.providerReason)
+      ? `The AI service is busy right now. Please try again in a minute.${scoreError.retryAfterSeconds ? ` Retry after about ${scoreError.retryAfterSeconds}s.` : ''}`
+      : (scoreError.message || 'Scoring failed. Check your connection and try again.');
+    message.dataset.kind = 'error';
+    retryButton.hidden = !retryable;
+  } finally {
+    button.disabled = false; button.classList.remove('is-loading'); button.textContent = lead?.ai_analysis ? 'Score lead again' : 'Score lead';
+  }
+}
+document.querySelector('#score-lead-button').addEventListener('click', runLeadScoring);
+document.querySelector('#rescore-lead-button').addEventListener('click', runLeadScoring);
+document.querySelector('#retry-score-button').addEventListener('click', runLeadScoring);
+subscribeToBusinessProfile(({ profile: updatedProfile, error: profileError }) => {
+  const message = document.querySelector('#ai-score-message');
+  if (profileError || !updatedProfile) {
+    profile = null;
+    profileLoaded = false;
+    document.querySelector('#complete-profile-link').hidden = true;
+    document.querySelector('#score-lead-button').disabled = true;
+    message.textContent = profileError?.message || 'Business profile could not be loaded. Try again.';
+    message.dataset.kind = 'error';
+    return;
+  }
+  profile = updatedProfile;
+  profileLoaded = true;
+  document.querySelector('#score-lead-button').disabled = false;
+  if (message.dataset.kind === 'error' && message.textContent.startsWith('Business profile')) {
+    message.textContent = '';
+    message.dataset.kind = '';
+  }
+  if (lead) renderAll();
+});
 document.querySelector('#edit-lead-button').addEventListener('click', () => {
   location.href = './leads.html?edit=' + encodeURIComponent(leadId);
 });

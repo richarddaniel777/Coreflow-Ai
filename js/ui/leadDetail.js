@@ -32,8 +32,6 @@ export function renderLeadDetails(container, lead, activities, profile) {
   addField(grid, 'Last activity', relativeDate(lead.last_activity_at || lead.created_at));
   addField(grid, 'Created', lead.created_at ? new Date(lead.created_at).toLocaleString() : 'Not provided');
   addField(grid, 'Updated', lead.updated_at ? new Date(lead.updated_at).toLocaleString() : 'Not provided');
-  addField(grid, 'AI score', lead.ai_score);
-  addField(grid, 'AI analysis', lead.ai_analysis == null ? null : (typeof lead.ai_analysis === 'string' ? lead.ai_analysis : JSON.stringify(lead.ai_analysis, null, 2)));
   card.append(grid);
   const notes = makeElement('div', 'detail-notes');
   appendText(notes, 'h2', 'ui-card__title', 'Notes');

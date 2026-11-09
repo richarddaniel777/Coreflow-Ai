@@ -1,10 +1,13 @@
 import { supabase } from '../api/supabase.js';
-import { createLead, deleteLead, getBusinessProfile, getLead, getLeads, updateLead } from '../api/leads.js';
+import { createLead, deleteLead, getLead, getLeads, updateLead } from '../api/leads.js';
+import { loadBusinessProfile, subscribeToBusinessProfile } from '../api/businessProfile.js';
 import { getActivitiesForLeads } from '../api/activities.js';
 import { makeElement, renderLeadTable, showPageState } from '../ui/leads.js';
 import { getLeadStatuses } from '../lib/leadStatus.js';
 import { initCsvImport } from './csvImport.js';
 import { refreshAttentionBadge } from '../ui/navigation.js';
+import { scoreLead } from '../api/ai.js';
+import { isProfileComplete } from '../lib/businessProfile.js';
 import { LEAD_SOURCES, PREFERRED_CHANNELS, LEAD_STAGES, stageRequiresLostReason } from '../lib/constants.js';
 
 const app = document.querySelector('#app');
@@ -18,14 +21,19 @@ const stageFilter = document.querySelector('#stage-filter');
 const sourceFilter = document.querySelector('#source-filter');
 const statusFilter = document.querySelector('#status-filter');
 const sortFilter = document.querySelector('#sort-filter');
+const priorityFilter = document.querySelector('#priority-filter');
+const scoreSort = document.querySelector('#sort-score');
 const resetButton = document.querySelector('#reset-filters');
 const activeFilterCount = document.querySelector('#active-filter-count');
 const emptyContactWarning = document.querySelector('#contact-warning');
 const lostReasonField = document.querySelector('#lost-reason-field');
 let leads = [];
-let profile = { currency: 'USD', quiet_after_days: 5 };
+let profile = null;
+let profileLoaded = false;
 let activityMap = new Map();
 let editingLead = null;
+let cancelScoring = false;
+let retryCandidates = [];
 
 function populateSelect(select, options, placeholder) {
   select.replaceChildren();
@@ -59,11 +67,30 @@ function errorText(error) {
 async function loadLeads() {
   listContainer.replaceChildren();
   showPageState(stateContainer, 'loading', 'Loading your leads…');
+  const profileState = document.querySelector('#leads-profile-state');
+  profileState.textContent = 'Loading business profile…';
+  profileState.dataset.kind = 'loading';
   try {
-    const result = await Promise.all([getLeads(), getBusinessProfile()]);
-    leads = result[0];
-    profile = result[1];
-    document.querySelectorAll('[data-currency-label]').forEach((label) => { label.textContent = profile.currency || 'USD'; });
+    const [leadsResult, profileResult] = await Promise.allSettled([
+      getLeads(),
+      loadBusinessProfile({ forceRefresh: true, source: 'leads' }),
+    ]);
+    if (profileResult.status === 'fulfilled') {
+      profile = profileResult.value;
+      profileLoaded = true;
+      profileState.textContent = '';
+      profileState.dataset.kind = '';
+      document.querySelector('#leads-profile-banner').hidden = isProfileComplete(profile);
+    } else {
+      profile = null;
+      profileLoaded = false;
+      document.querySelector('#leads-profile-banner').hidden = true;
+      profileState.textContent = profileResult.reason?.message || 'Business profile could not be loaded. Try again.';
+      profileState.dataset.kind = 'error';
+    }
+    if (leadsResult.status === 'rejected') throw leadsResult.reason;
+    leads = leadsResult.value;
+    document.querySelectorAll('[data-currency-label]').forEach((label) => { label.textContent = profile?.currency || 'USD'; });
     const activities = await getActivitiesForLeads(leads.map((lead) => lead.id));
     activityMap = new Map();
     activities.forEach((activity) => {
@@ -82,8 +109,8 @@ async function loadLeads() {
   }
 }
 function applyFilters() {
-  const activeCount = [search.value.trim(), stageFilter.value, sourceFilter.value, statusFilter.value].filter(Boolean).length;
-  const hasActiveControls = activeCount > 0 || Boolean(sortFilter.value);
+  const activeCount = [search.value.trim(), stageFilter.value, sourceFilter.value, statusFilter.value, priorityFilter.value].filter(Boolean).length;
+  const hasActiveControls = activeCount > 0 || Boolean(sortFilter.value) || Boolean(scoreSort.value);
   activeFilterCount.textContent = activeCount === 0 ? 'No active filters' : activeCount + (activeCount === 1 ? ' active filter' : ' active filters');
   resetButton.disabled = !hasActiveControls;
   resetButton.hidden = !hasActiveControls;
@@ -97,10 +124,14 @@ function applyFilters() {
     const leadStatuses = getLeadStatuses(lead, activities, profile?.quiet_after_days ?? 5);
     const statuses = { needs_reply: leadStatuses.needsReply, gone_quiet: leadStatuses.goneQuiet };
     const matchesStatus = !statusFilter.value || statuses[statusFilter.value];
-    return matchesQuery && matchesStage && matchesSource && matchesStatus;
+    const priority = lead.ai_analysis?.priority || '';
+    const matchesPriority = !priorityFilter.value || (priorityFilter.value === 'unscored' ? lead.ai_score == null : priority === priorityFilter.value);
+    return matchesQuery && matchesStage && matchesSource && matchesStatus && matchesPriority;
   });
   if (sortFilter.value === 'deal_value') filtered = filtered.slice().sort((a, b) => Number(b.deal_value || 0) - Number(a.deal_value || 0));
   else filtered = filtered.slice().sort((a, b) => new Date(b.last_activity_at || b.created_at).getTime() - new Date(a.last_activity_at || a.created_at).getTime());
+  if (scoreSort.value === 'score_desc') filtered = filtered.slice().sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
+  if (scoreSort.value === 'score_asc') filtered = filtered.slice().sort((a, b) => (a.ai_score ?? 101) - (b.ai_score ?? 101));
 
   document.querySelector('#lead-count').textContent = String(filtered.length) + (filtered.length === 1 ? ' lead' : ' leads');
   if (!leads.length) {
@@ -122,21 +153,148 @@ function applyFilters() {
     return;
   }
   stateContainer.replaceChildren();
-  renderLeadTable(listContainer, filtered, activityMap, profile);
+  renderLeadTable(listContainer, filtered, activityMap, profile || { currency: 'USD', quiet_after_days: 5 });
 }
+
+subscribeToBusinessProfile(({ profile: updatedProfile, error: profileError }) => {
+  const profileState = document.querySelector('#leads-profile-state');
+  const banner = document.querySelector('#leads-profile-banner');
+  if (profileError || !updatedProfile) {
+    profile = null;
+    profileLoaded = false;
+    banner.hidden = true;
+    profileState.textContent = profileError?.message || 'Business profile could not be loaded. Try again.';
+    profileState.dataset.kind = 'error';
+    return;
+  }
+  profile = updatedProfile;
+  profileLoaded = true;
+  profileState.textContent = '';
+  profileState.dataset.kind = '';
+  banner.hidden = isProfileComplete(profile);
+  document.querySelectorAll('[data-currency-label]').forEach((label) => { label.textContent = profile.currency || 'USD'; });
+  applyFilters();
+});
 function resetFilters() {
   search.value = '';
   stageFilter.value = '';
   sourceFilter.value = '';
   statusFilter.value = '';
   sortFilter.value = '';
+  priorityFilter.value = '';
+  scoreSort.value = '';
   applyFilters();
   search.focus();
 }
 resetButton.addEventListener('click', resetFilters);
 
-[search, stageFilter, sourceFilter, statusFilter, sortFilter].forEach((control) => {
+[search, stageFilter, sourceFilter, statusFilter, sortFilter, priorityFilter, scoreSort].forEach((control) => {
   control.addEventListener(control === search ? 'input' : 'change', applyFilters);
+});
+
+async function runScoreBatch(candidates) {
+  const button = document.querySelector('#score-all-button');
+  const retryButton = document.querySelector('#retry-skipped-button');
+  const progress = document.querySelector('#score-all-progress');
+  const skippedNode = document.querySelector('#score-all-skipped');
+  const cancelButton = document.querySelector('#cancel-score-all');
+  if (!candidates.length) { progress.textContent = 'Every lead already has a score.'; return; }
+  if (!profileLoaded || !profile) {
+    progress.textContent = 'Business profile could not be loaded. Retry loading the Leads page before scoring.';
+    return;
+  }
+  if (!isProfileComplete(profile)) {
+    progress.textContent = 'Add at least 10 non-whitespace characters to products/services in Settings before scoring.';
+    if (window.confirm('Complete your business profile in Settings before scoring leads. Open Settings now?')) location.href = './index.html#settings';
+    return;
+  }
+  cancelScoring = false;
+  retryCandidates = [];
+  skippedNode.hidden = true;
+  skippedNode.textContent = '';
+  button.disabled = true; button.classList.add('is-loading');
+  retryButton.disabled = true;
+  cancelButton.hidden = false;
+  cancelButton.disabled = false;
+  progress.textContent = `Scoring 0 of ${candidates.length}…`;
+  const minimumStartGapMs = 8000;
+  const retryWaitMs = 30_000;
+  let previousRequestStartedAt = 0;
+  let cancelled = false;
+  let completedThisRun = 0;
+  let consecutiveFailures = 0;
+  let stoppedAfterFailures = false;
+  const skipped = [];
+  const renderSkipped = () => {
+    retryCandidates = skipped.map((item) => item.lead);
+    skippedNode.hidden = skipped.length === 0;
+    skippedNode.textContent = skipped.length
+      ? `Skipped ${skipped.length}: ${skipped.map((item) => `${item.lead.name} (${item.reason})`).join('; ')}`
+      : '';
+    retryButton.hidden = skipped.length === 0;
+  };
+  try {
+    for (let index = 0; index < candidates.length; index++) {
+      if (cancelScoring) { cancelled = true; break; }
+      while (previousRequestStartedAt && Date.now() - previousRequestStartedAt < minimumStartGapMs) {
+        if (cancelScoring) { cancelled = true; break; }
+        const secondsRemaining = Math.ceil((minimumStartGapMs - (Date.now() - previousRequestStartedAt)) / 1000);
+        progress.textContent = `Scored ${completedThisRun} of ${candidates.length}. Next lead in ${secondsRemaining}s. Skipped: ${skipped.length}. You can cancel.`;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      if (cancelScoring) { cancelled = true; break; }
+      progress.textContent = `Scoring ${index + 1} of ${candidates.length}: ${candidates[index].name}`;
+      previousRequestStartedAt = Date.now();
+      try {
+        await scoreLead(candidates[index].id);
+        completedThisRun++;
+        consecutiveFailures = 0;
+      } catch (scoreError) {
+        const reason = scoreError.providerReason || scoreError.message || 'request failed';
+        skipped.push({ lead: candidates[index], reason });
+        consecutiveFailures++;
+        renderSkipped();
+        if (consecutiveFailures >= 3) {
+          stoppedAfterFailures = true;
+          break;
+        }
+        const shouldWait = scoreError.providerReason === 'OVERLOADED' || scoreError.providerReason === 'RATE_LIMITED';
+        if (shouldWait && index < candidates.length - 1) {
+          const waitUntil = Date.now() + retryWaitMs;
+          while (Date.now() < waitUntil) {
+            if (cancelScoring) { cancelled = true; break; }
+            const secondsRemaining = Math.ceil((waitUntil - Date.now()) / 1000);
+            progress.textContent = `${scoreError.providerReason === 'OVERLOADED' ? 'AI overloaded' : 'Rate limited'}; next lead in ${secondsRemaining}s. Completed ${completedThisRun} of ${candidates.length}.`;
+            await new Promise((resolve) => setTimeout(resolve, 250));
+          }
+          if (cancelled) break;
+        }
+      }
+    }
+    await loadLeads();
+    const summary = `Completed ${completedThisRun} of ${candidates.length}. Skipped ${skipped.length}${stoppedAfterFailures ? ' and stopped after 3 consecutive failures' : ''}${cancelled ? ' (cancelled)' : ''}.`;
+    progress.textContent = summary;
+    renderSkipped();
+    if (skipped.length) setNotice(summary, 'error');
+  } catch (error) {
+    const text = `Scoring stopped: ${error?.message || 'request failed'}`;
+    progress.textContent = text;
+    setNotice(text, 'error');
+    await loadLeads();
+  } finally {
+    button.disabled = false; button.classList.remove('is-loading'); retryButton.disabled = false; cancelButton.hidden = true;
+  }
+}
+
+document.querySelector('#score-all-button').addEventListener('click', () => {
+  runScoreBatch(leads.filter((lead) => lead.ai_score == null));
+});
+document.querySelector('#retry-skipped-button').addEventListener('click', () => {
+  runScoreBatch(retryCandidates);
+});
+document.querySelector('#cancel-score-all').addEventListener('click', (event) => {
+  cancelScoring = true;
+  event.currentTarget.disabled = true;
 });
 
 function refreshContactWarning() {

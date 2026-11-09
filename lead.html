@@ -3,12 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="./js/lib/originGuard.js"></script>
   <meta name="theme-color" content="#f4f7f6">
   <title>Lead · CoreFlow AI</title>
   <link rel="stylesheet" href="./css/app.css">
   <link rel="stylesheet" href="./css/design-system.css">
   <link rel="stylesheet" href="./css/leads.css">
   <link rel="stylesheet" href="./css/followups.css">
+  <link rel="stylesheet" href="./css/ai-settings.css">
 </head>
 <body class="app-page">
   <div id="app" class="app-shell" hidden>
@@ -28,6 +30,16 @@
           <div class="detail-actions"><span id="detail-status" class="ui-badge ui-badge--info">Loading</span><button id="edit-lead-button" class="ui-button ui-button--secondary" type="button">Edit lead</button><button id="delete-lead-button" class="ui-button ui-button--danger" type="button">Delete lead</button></div>
         </div>
         <p id="page-notice" class="form-message" role="status" aria-live="polite"></p>
+        <section id="ai-score-section" class="ui-card ai-score-card" aria-labelledby="ai-score-title">
+          <div class="ai-score-heading"><div><p class="eyebrow">AI ASSISTANCE</p><h2 id="ai-score-title">Lead score</h2></div><span id="ai-score-badge" class="ui-badge ui-badge--neutral" hidden></span></div>
+          <p class="privacy-note">Lead details are sent to the configured AI provider to generate this analysis.</p>
+          <p id="ai-score-stale" class="score-stale" hidden>This analysis may be out of date because the lead or activity changed. <button id="rescore-lead-button" class="ui-button ui-button--ghost" type="button">Re-score</button></p>
+          <p id="ai-score-message" class="form-message" role="status" aria-live="polite"></p>
+          <button id="retry-score-button" class="ui-button ui-button--secondary" type="button" hidden>Try again</button>
+          <a id="complete-profile-link" class="ui-button ui-button--secondary" href="./index.html#settings" hidden>Complete Settings first</a>
+          <button id="score-lead-button" class="ui-button ui-button--primary" type="button">Score lead</button>
+          <div id="ai-analysis-panel"></div>
+        </section>
         <section id="quick-actions" class="quick-actions" aria-label="Contact actions"></section>
         <section id="detail-content" class="detail-content"></section>
         <section id="followup-section" class="ui-card followup-section" hidden>

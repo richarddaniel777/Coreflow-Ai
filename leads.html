@@ -3,12 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="./js/lib/originGuard.js"></script>
   <meta name="theme-color" content="#f4f7f6">
   <title>Leads · CoreFlow AI</title>
   <link rel="stylesheet" href="./css/app.css">
   <link rel="stylesheet" href="./css/design-system.css">
   <link rel="stylesheet" href="./css/leads.css">
   <link rel="stylesheet" href="./css/followups.css">
+  <link rel="stylesheet" href="./css/ai-settings.css">
   <link rel="stylesheet" href="./css/csv-import.css">
 </head>
 <body class="app-page">
@@ -27,6 +29,10 @@
       </aside>
       <main class="main-content leads-main">
         <div class="leads-title-row"><div><p class="eyebrow">SALES PIPELINE</p><h1>Leads</h1><p class="muted">Keep enquiries, conversations and next steps together.</p></div><div class="lead-title-actions"><button id="import-csv-button" class="ui-button ui-button--secondary" type="button">Import CSV</button><button id="add-lead-button" class="ui-button ui-button--primary" type="button">＋ Add lead</button></div></div>
+        <p id="leads-profile-state" class="form-message" role="status" aria-live="polite"></p>
+        <div id="leads-profile-banner" class="profile-completion-banner" hidden>Complete your business profile to get better AI results. <a class="ui-button ui-button--secondary" href="./index.html#settings">Open Settings</a></div>
+        <div class="score-all-row"><button id="score-all-button" class="ui-button ui-button--secondary" type="button">Score all unscored</button><span id="score-all-progress" class="muted" aria-live="polite"></span><button id="cancel-score-all" class="ui-button ui-button--ghost" type="button" hidden>Cancel</button><button id="retry-skipped-button" class="ui-button ui-button--secondary" type="button" hidden>Try again</button></div>
+        <p id="score-all-skipped" class="form-message" role="status" aria-live="polite" hidden></p>
         <p id="page-notice" class="form-message" role="status" aria-live="polite"></p>
         <section class="lead-filters" aria-label="Search and filter leads">
           <div class="ui-field filter-search"><label class="ui-label" for="lead-search">Search leads</label><input id="lead-search" class="ui-input" type="search" placeholder="Name, company, phone or email"></div>
@@ -34,6 +40,8 @@
           <div class="ui-field"><label class="ui-label" for="source-filter">Source</label><select id="source-filter" class="ui-select"></select></div>
           <div class="ui-field"><label class="ui-label" for="status-filter">Status</label><select id="status-filter" class="ui-select"><option value="">All statuses</option><option value="needs_reply">Needs reply</option><option value="gone_quiet">Gone quiet</option></select></div>
           <div class="ui-field"><label class="ui-label" for="sort-filter">Sort by</label><select id="sort-filter" class="ui-select"><option value="">Last activity</option><option value="deal_value">Deal value</option></select></div>
+          <div class="ui-field"><label class="ui-label" for="priority-filter">AI priority</label><select id="priority-filter" class="ui-select"><option value="">Any priority</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option><option value="unscored">Not scored</option></select></div>
+          <div class="ui-field"><label class="ui-label" for="sort-score">Score sort</label><select id="sort-score" class="ui-select"><option value="">No score sort</option><option value="score_desc">Highest score</option><option value="score_asc">Lowest score</option></select></div>
         </section>
         <div class="lead-filter-summary"><span id="active-filter-count" aria-live="polite">No active filters</span><button id="reset-filters" class="ui-button ui-button--ghost" type="button" disabled hidden>Reset filters</button></div>
         <div class="list-meta"><span id="lead-count">0 leads</span></div>

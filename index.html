@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="./js/lib/originGuard.js"></script>
   <script>
     const recoveryHash = new URLSearchParams(window.location.hash.slice(1));
     if (recoveryHash.get('type') === 'recovery') {
@@ -15,6 +16,7 @@
   <link rel="stylesheet" href="./css/design-system.css">
   <link rel="stylesheet" href="./css/followups.css">
   <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/ai-settings.css">
 </head>
 <body class="app-page">
   <div id="app-shell" class="app-shell" hidden>
@@ -31,8 +33,27 @@
         </nav><div class="sidebar-foot">Your business, in good flow.</div>
       </aside>
       <main class="main-content today-main">
-        <div id="dashboard-page"><p class="eyebrow">FOLLOW THROUGH</p><h1 id="page-title">Today</h1><p id="page-description" class="muted">Your replies and follow-ups that need attention.</p><div id="today-state" aria-live="polite"></div><div id="today-sections"></div></div>
-        <div id="other-page" hidden><p class="eyebrow">WORKSPACE</p><h1 id="other-page-title">Settings</h1><p id="other-page-description" class="muted">Business settings will appear here.</p><div class="placeholder-card"><div class="placeholder-icon">⚙</div><h2>Workspace settings</h2><p>Business profile settings will appear here.</p></div></div>
+        <div id="dashboard-page"><p class="eyebrow">FOLLOW THROUGH</p><h1 id="page-title">Today</h1><p id="page-description" class="muted">Your replies and follow-ups that need attention.</p><div id="dashboard-profile-state" class="form-message" role="status" aria-live="polite"></div><div id="dashboard-profile-banner" class="profile-completion-banner" hidden>Complete your business profile to get better AI results. <button type="button" class="ui-button ui-button--secondary" data-open-settings>Open Settings</button></div><div id="today-state" aria-live="polite"></div><div id="today-sections"></div></div>
+        <div id="other-page" hidden><p class="eyebrow">WORKSPACE</p><h1 id="other-page-title">Settings</h1><p id="other-page-description" class="muted">Keep your business details accurate for better AI assistance.</p>
+          <div class="ui-card settings-card">
+            <h2 class="ui-card__title">Business profile</h2>
+            <p class="muted">These details help tailor lead scoring and future AI assistance to your business.</p>
+            <form id="settings-form">
+              <div class="settings-grid">
+                <div class="ui-field"><label class="ui-label" for="setting-business-name">Business name</label><input class="ui-input" id="setting-business-name" name="business_name" maxlength="200"></div>
+                <div class="ui-field"><label class="ui-label" for="setting-business-type">Business type</label><input class="ui-input" id="setting-business-type" name="business_type" maxlength="200" placeholder="e.g. Web design agency"></div>
+                <div class="ui-field settings-wide"><label class="ui-label" for="setting-products">Products and services</label><textarea class="ui-textarea" id="setting-products" name="products_services" rows="4" maxlength="2000"></textarea></div>
+                <div class="ui-field settings-wide"><label class="ui-label" for="setting-pricing">Pricing notes</label><textarea class="ui-textarea" id="setting-pricing" name="pricing_notes" rows="3" maxlength="2000"></textarea></div>
+                <div class="ui-field settings-wide"><label class="ui-label" for="setting-customer">Ideal customer</label><textarea class="ui-textarea" id="setting-customer" name="ideal_customer" rows="3" maxlength="2000"></textarea></div>
+                <div class="ui-field"><label class="ui-label" for="setting-tone">Preferred tone</label><input class="ui-input" id="setting-tone" name="tone" maxlength="120" value="friendly and professional"></div>
+                <div class="ui-field"><label class="ui-label" for="setting-currency">Currency</label><select class="ui-select" id="setting-currency" name="currency"><option value="USD">USD — US Dollar</option><option value="EUR">EUR — Euro</option><option value="GBP">GBP — British Pound</option><option value="NGN">NGN — Nigerian Naira</option><option value="CAD">CAD — Canadian Dollar</option><option value="AUD">AUD — Australian Dollar</option><option value="INR">INR — Indian Rupee</option><option value="KES">KES — Kenyan Shilling</option><option value="GHS">GHS — Ghanaian Cedi</option><option value="ZAR">ZAR — South African Rand</option></select></div>
+                <div class="ui-field"><label class="ui-label" for="setting-quiet-days">Quiet after (days)</label><input class="ui-input" id="setting-quiet-days" name="quiet_after_days" type="number" min="1" max="60" step="1" required></div>
+              </div>
+              <p id="settings-message" class="form-message" role="status" aria-live="polite"></p>
+              <button id="settings-save" class="ui-button ui-button--primary" type="submit">Save business profile</button>
+            </form>
+          </div>
+        </div>
         <p id="app-message" class="form-message" role="status" aria-live="polite"></p>
       </main>
     </div>
