@@ -40,6 +40,38 @@
           <button id="score-lead-button" class="ui-button ui-button--primary" type="button">Score lead</button>
           <div id="ai-analysis-panel"></div>
         </section>
+        <section id="message-writer" class="ui-card message-writer" aria-labelledby="message-writer-title">
+          <div class="ai-score-heading"><div><p class="eyebrow">AI ASSISTANCE</p><h2 id="message-writer-title">Write message</h2></div></div>
+          <p class="privacy-note">Lead and business details are sent to the configured AI provider to draft this message. Drafts are not saved or sent until you choose “Mark as sent.”</p>
+          <form id="message-writer-form">
+            <div class="message-writer__controls">
+              <div class="ui-field"><label class="ui-label" for="draft-message-type">Message type</label><select class="ui-select" id="draft-message-type" name="message_type" required></select></div>
+              <div class="ui-field"><label class="ui-label" for="draft-message-channel">Channel</label><select class="ui-select" id="draft-message-channel" name="channel" required></select></div>
+            </div>
+            <div class="ui-field"><label class="ui-label" for="draft-extra-instructions">Extra instructions <span class="muted">(optional)</span></label><textarea class="ui-textarea" id="draft-extra-instructions" name="extra_instructions" rows="3" maxlength="500" placeholder="Anything else the draft should consider?"></textarea><small class="muted">Up to 500 characters. Customer text is treated as source data, not instructions.</small></div>
+            <p id="draft-message-error" class="form-message" role="alert" aria-live="polite"></p>
+            <button id="generate-message-button" class="ui-button ui-button--primary" type="submit">Generate draft</button>
+          </form>
+          <p id="draft-sent-notice" class="form-message" role="status" aria-live="polite"></p>
+          <div id="draft-message-result" class="message-writer__result" hidden>
+            <div id="draft-missing-facts" class="message-writer__warning" role="status" hidden></div>
+            <div class="ui-field" data-draft-subject-wrap hidden><label class="ui-label" for="draft-subject">Subject</label><input id="draft-subject" class="ui-input" maxlength="300"></div>
+            <div class="ui-field" data-draft-body-wrap hidden><label class="ui-label" for="draft-body">Body</label><textarea id="draft-body" class="ui-textarea" rows="5" maxlength="12000"></textarea></div>
+            <section id="draft-placeholder-list" class="message-writer__placeholders" aria-label="Placeholders to complete" hidden></section>
+            <div class="ui-field" data-draft-talking-wrap hidden><label class="ui-label">Call or conversation talking points</label><div id="draft-talking-points" class="message-writer__editable-list"></div><button id="add-talking-point" class="ui-button ui-button--ghost" type="button">Add talking point</button></div>
+            <div class="ui-field" data-draft-objections-wrap hidden><label class="ui-label">Likely objections and suggested answers</label><div id="draft-objections" class="message-writer__editable-list"></div></div>
+            <div class="message-writer__preview-wrap"><p class="ui-label">Draft preview</p><div id="draft-preview" class="message-writer__preview" aria-live="polite"></div></div>
+            <p id="draft-personalization" class="message-writer__personalization"></p>
+            <div id="draft-placeholder-check-wrap" class="message-writer__check-wrap" hidden><input id="draft-placeholder-check" type="checkbox"><label for="draft-placeholder-check" class="message-writer__check">I have checked and completed the placeholders</label></div>
+            <div class="message-writer__actions">
+              <button id="regenerate-message-button" class="ui-button ui-button--secondary" type="button">Regenerate</button>
+              <button id="copy-message-button" class="ui-button ui-button--secondary" type="button">Copy</button>
+              <a id="open-message-button" class="ui-button ui-button--secondary" hidden></a>
+              <button id="retry-mark-sent-button" class="ui-button ui-button--secondary" type="button" hidden>Retry logging</button>
+              <button id="mark-message-sent-button" class="ui-button ui-button--primary" type="button">Mark as sent</button>
+            </div>
+          </div>
+        </section>
         <section id="quick-actions" class="quick-actions" aria-label="Contact actions"></section>
         <section id="detail-content" class="detail-content"></section>
         <section id="followup-section" class="ui-card followup-section" hidden>
@@ -86,6 +118,10 @@
       <p data-task-dialog-message class="form-message" role="alert" aria-live="polite"></p>
       <div class="task-compose-dialog__actions"><button data-task-dialog-close class="ui-button ui-button--secondary" type="button">Cancel</button><button data-task-submit class="ui-button ui-button--primary" type="submit">Schedule follow-up</button></div>
     </form>
+  </dialog>
+  <dialog id="draft-replace-dialog" class="ui-dialog" aria-labelledby="draft-replace-title">
+    <div class="task-compose-dialog__head"><div><h2 id="draft-replace-title">Replace your edits?</h2><p class="muted">Regenerating will overwrite the changes you made to this draft.</p></div></div>
+    <div class="task-compose-dialog__actions"><button id="draft-replace-cancel" class="ui-button ui-button--secondary" type="button">Cancel</button><button id="draft-replace-confirm" class="ui-button ui-button--primary" type="button">Replace</button></div>
   </dialog>
   <script type="module" src="./js/pages/lead-detail.js"></script>
 </body>

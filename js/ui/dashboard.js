@@ -25,7 +25,7 @@ function taskReason(section, task, today) {
   if (section === 'dueToday') return 'Due today';
   return 'Due ' + relativeDateLabel(task.due_date, today + 'T12:00:00');
 }
-function leadItem(entry, reason, handlers) {
+function leadItem(entry, reason, handlers, messageType) {
   const item = make('article', 'today-item');
   const top = make('div', 'today-item__top'); top.append(make('h3', '', entry.lead.name)); item.append(top);
   item.append(make('p', 'today-item__reason', reason));
@@ -33,7 +33,10 @@ function leadItem(entry, reason, handlers) {
   actions.append(openLeadButton(entry.lead));
   const schedule = make('button', 'ui-button ui-button--secondary', 'Schedule follow-up');
   schedule.type = 'button'; schedule.addEventListener('click', () => handlers.schedule(entry.lead));
-  actions.append(schedule); item.append(actions);
+  actions.append(schedule);
+  const write = make('a', 'ui-button ui-button--secondary', 'Write message');
+  write.href = './lead.html?id=' + encodeURIComponent(entry.lead.id) + '&draft=' + encodeURIComponent(messageType) + '#message-writer';
+  actions.append(write); item.append(actions);
   return item;
 }
 function taskItem(section, task, handlers, today) {
@@ -71,13 +74,13 @@ export function renderTodayDashboard(container, sections, handlers) {
   }
   const grid = make('div', 'today-sections');
   grid.append(section('Needs reply', 'Open leads waiting for your response, oldest first.', sections.needsReply,
-    'No open leads are waiting for a reply.', (entry) => leadItem(entry, waitingReason(entry.row, sections.today), handlers)));
+    'No open leads are waiting for a reply.', (entry) => leadItem(entry, waitingReason(entry.row, sections.today), handlers, 'enquiry_reply')));
   grid.append(section('Overdue follow-ups', 'Open tasks that are past their due date.', sections.overdue,
     'No follow-ups are overdue.', (task) => taskItem('overdue', task, handlers, sections.today)));
   grid.append(section('Due today', 'Follow-ups scheduled for today.', sections.dueToday,
     'Nothing is due today.', (task) => taskItem('dueToday', task, handlers, sections.today)));
   grid.append(section('Gone quiet', 'Open leads with no recent activity or open follow-up.', sections.goneQuiet,
-    'No open leads have gone quiet without a follow-up.', (entry) => leadItem(entry, 'No real activity since ' + relativeDateLabel(entry.row.last_real_activity_at || entry.lead.created_at, sections.today + 'T12:00:00') + '; no open follow-up.', handlers)));
+    'No open leads have gone quiet without a follow-up.', (entry) => leadItem(entry, 'No real activity since ' + relativeDateLabel(entry.row.last_real_activity_at || entry.lead.created_at, sections.today + 'T12:00:00') + '; no open follow-up.', handlers, 're_engage_quiet_lead')));
   grid.append(section('Upcoming', 'Open follow-ups due in the next 7 days.', sections.upcoming,
     'No follow-ups are coming up in the next 7 days.', (task) => taskItem('upcoming', task, handlers, sections.today)));
   container.append(grid);
