@@ -1,33 +1,21 @@
 import { supabase } from '../api/supabase.js';
 import { getLeadActivitySummary } from '../api/dashboard.js';
 import { getOpenTasksWithLeads } from '../api/tasks.js';
-import { loadBusinessProfile, saveBusinessProfile, subscribeToBusinessProfile } from '../api/businessProfile.js';
+import { loadBusinessProfile, saveBusinessProfile, subscribeToBusinessProfile, uploadBusinessLogo } from '../api/businessProfile.js';
 import { buildTodaySections } from '../lib/dashboardStatus.js';
 import { isProfileComplete } from '../lib/businessProfile.js';
 import { renderTodayDashboard } from '../ui/dashboard.js';
-import { setAttentionBadge } from '../ui/navigation.js';
+import { initAppNavigation, setAttentionBadge, updateActiveNavigation } from '../ui/navigation.js';
 import { createTaskController } from './taskController.js';
+import { redirectToLogin } from '../lib/authRedirect.js';
 
 const { data: { session }, error } = await supabase.auth.getSession();
-if (error || !session) location.replace('./login.html');
+if (error || !session) redirectToLogin('Your session expired, please log in again.');
 else {
-  document.querySelector('#account-email').textContent = session.user.email ?? '';
   document.querySelector('#app-shell').hidden = false;
+  initAppNavigation(session.user.email ?? '');
 }
-const logoutButton = document.querySelector('#logout-button');
 const status = document.querySelector('#app-message');
-logoutButton.addEventListener('click', async () => {
-  logoutButton.disabled = true;
-  status.textContent = 'Signing out…';
-  let signOutError;
-  try { ({ error: signOutError } = await supabase.auth.signOut()); }
-  catch (requestError) {
-    status.textContent = requestError.message || 'Unable to sign out. Check your connection and try again.';
-    logoutButton.disabled = false; return;
-  }
-  if (signOutError) { status.textContent = signOutError.message; logoutButton.disabled = false; return; }
-  location.replace('./login.html');
-});
 
 const state = document.querySelector('#today-state');
 const sectionsNode = document.querySelector('#today-sections');
@@ -51,7 +39,7 @@ async function loadDashboard(showLoading = false) {
   if (showLoading) showDashboardState('loading', 'Loading today’s follow-ups…');
   try {
     try {
-      profile = await loadBusinessProfile({ forceRefresh: true, source: 'dashboard' });
+      profile = await loadBusinessProfile({ source: 'dashboard' });
       document.querySelector('#dashboard-profile-state').textContent = '';
       document.querySelector('#dashboard-profile-state').dataset.kind = '';
       document.querySelector('#dashboard-profile-banner').hidden = isProfileComplete(profile);
@@ -80,14 +68,36 @@ async function loadDashboard(showLoading = false) {
 }
 const settingsForm = document.querySelector('#settings-form');
 const settingsMessage = document.querySelector('#settings-message');
+const logoFile = document.querySelector('#setting-company-logo');
+const logoUploadButton = document.querySelector('#settings-logo-upload');
+const logoStatus = document.querySelector('#settings-logo-message');
+const logoPreview = document.querySelector('#settings-logo-preview');
+const logoInitials = document.querySelector('#settings-logo-initials');
 function setSettingsMessage(message, kind = '') {
   settingsMessage.textContent = message || '';
   settingsMessage.dataset.kind = kind;
 }
+function renderSettingsLogo(currentProfile) {
+  const name = String(currentProfile?.business_name || '').trim() || 'CoreFlow AI';
+  const words = name.split(/\s+/).filter(Boolean);
+  logoInitials.textContent = (words.length > 1 ? words[0][0] + words[words.length - 1][0] : name.slice(0, 2)).toLocaleUpperCase();
+  logoPreview.alt = `${name} logo preview`;
+  let safeUrl = '';
+  try {
+    const candidate = new URL(currentProfile?.logo_url || '', window.location.origin);
+    if (['http:', 'https:'].includes(candidate.protocol)) safeUrl = candidate.href;
+  } catch { /* Keep the initials preview when there is no usable logo URL. */ }
+  logoPreview.hidden = !safeUrl;
+  logoPreview.onerror = () => { logoPreview.hidden = true; logoInitials.hidden = false; };
+  logoPreview.onload = () => { logoInitials.hidden = true; };
+  logoPreview.removeAttribute('src');
+  if (safeUrl) logoPreview.src = safeUrl;
+  logoInitials.hidden = Boolean(safeUrl);
+}
 async function loadSettings() {
   setSettingsMessage('Loading business profile…', 'loading');
   try {
-    profile = await loadBusinessProfile({ forceRefresh: true, source: 'settings' });
+    profile = await loadBusinessProfile({ source: 'settings' });
     for (const field of ['business_name', 'business_type', 'products_services', 'pricing_notes', 'ideal_customer', 'tone', 'currency', 'quiet_after_days']) {
       if (field === 'currency' && profile.currency && !Array.from(settingsForm.elements.currency.options).some((option) => option.value === profile.currency)) {
         const option = document.createElement('option'); option.value = profile.currency; option.textContent = profile.currency + ' — Current business currency';
@@ -95,11 +105,44 @@ async function loadSettings() {
       }
       settingsForm.elements[field].value = profile[field] ?? (field === 'quiet_after_days' ? 5 : field === 'currency' ? 'USD' : '');
     }
+    renderSettingsLogo(profile);
     setSettingsMessage('');
   } catch (loadError) {
     setSettingsMessage(loadError?.message || 'Business profile could not be loaded. Try again.', 'error');
   }
 }
+logoFile.addEventListener('change', () => {
+  const file = logoFile.files?.[0];
+  logoStatus.textContent = file ? `Selected: ${file.name}` : '';
+  logoStatus.dataset.kind = file ? 'loading' : '';
+});
+logoUploadButton.addEventListener('click', async () => {
+  const file = logoFile.files?.[0];
+  if (!file) {
+    logoStatus.textContent = 'Choose a logo image first.';
+    logoStatus.dataset.kind = 'error';
+    return;
+  }
+  logoUploadButton.disabled = true;
+  logoUploadButton.classList.add('is-loading');
+  logoUploadButton.textContent = 'Uploading…';
+  logoStatus.textContent = 'Uploading your company logo…';
+  logoStatus.dataset.kind = 'loading';
+  try {
+    profile = await uploadBusinessLogo(file);
+    renderSettingsLogo(profile);
+    logoFile.value = '';
+    logoStatus.textContent = 'Company logo uploaded.';
+    logoStatus.dataset.kind = 'success';
+  } catch (uploadError) {
+    logoStatus.textContent = uploadError?.message || 'Company logo could not be uploaded. Please try again.';
+    logoStatus.dataset.kind = 'error';
+  } finally {
+    logoUploadButton.disabled = false;
+    logoUploadButton.classList.remove('is-loading');
+    logoUploadButton.textContent = 'Upload logo';
+  }
+});
 settingsForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!settingsForm.reportValidity()) return;
@@ -138,6 +181,7 @@ subscribeToBusinessProfile(({ profile: updatedProfile, error: profileError }) =>
     return;
   }
   profile = updatedProfile;
+  renderSettingsLogo(profile);
   profileState.textContent = '';
   profileState.dataset.kind = '';
   banner.hidden = isProfileComplete(profile);
@@ -150,32 +194,20 @@ const taskController = createTaskController({
   showNotice: setMessage,
 });
 
-document.querySelectorAll('[data-page]').forEach((link) => link.addEventListener('click', (event) => {
-  event.preventDefault();
-  const page = link.dataset.page;
-  history.replaceState(null, '', '#' + page);
-  const dashboardPage = document.querySelector('#dashboard-page');
-  const otherPage = document.querySelector('#other-page');
-  document.querySelectorAll('[data-page]').forEach((item) => item.setAttribute('aria-current', String(item.dataset.page === page)));
-  if (page === 'dashboard') {
-    dashboardPage.hidden = false; otherPage.hidden = true;
-    document.querySelector('#page-title').textContent = 'Today';
-    document.querySelector('#page-description').textContent = 'Your replies and follow-ups that need attention.';
-    loadDashboard(false);
-  } else {
-    dashboardPage.hidden = true; otherPage.hidden = false;
-    document.querySelector('#other-page-title').textContent = 'Settings';
-    document.querySelector('#other-page-description').textContent = 'Keep your business details accurate for better AI assistance.';
-    loadSettings();
-  }
-}));
+function renderRoute(initial = false) {
+  const route = updateActiveNavigation();
+  document.querySelector('#dashboard-page').hidden = route !== 'dashboard';
+  document.querySelector('#other-page').hidden = route !== 'settings';
+  document.querySelector('#analytics-page').hidden = route !== 'analytics';
+  if (route === 'dashboard') loadDashboard(initial);
+  if (route === 'settings') loadSettings();
+}
+window.addEventListener('hashchange', () => renderRoute(false));
 
 document.querySelectorAll('[data-open-settings]').forEach((button) => button.addEventListener('click', () => {
   location.hash = 'settings';
-  document.querySelector('[data-page="settings"]').click();
 }));
 
 if (!error && session) {
-  if (location.hash === '#settings') document.querySelector('[data-page="settings"]').click();
-  else await loadDashboard(true);
+  renderRoute(true);
 }

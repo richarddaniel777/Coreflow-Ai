@@ -15,12 +15,30 @@
 <body class="app-page">
   <div id="app" class="app-shell" hidden>
     <header class="topbar">
-      <a class="brand" href="./index.html"><span class="brand-mark">C</span>CoreFlow <span class="brand-ai">AI</span></a>
-      <div class="account-actions"><span id="account-email" class="account-email"></span><button id="logout-button" class="button button-quiet" type="button">Log out</button></div>
+      <a class="app-brand" href="./index.html#dashboard" aria-label="CoreFlow AI dashboard"><span class="app-brand__mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 13.2c2.1 0 2.1-2.4 4.2-2.4s2.1 2.4 4.2 2.4 2.1-2.4 4.2-2.4 2.1 2.4 4.2 2.4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/><path d="M5 7h14M5 17h8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></svg></span><span class="app-brand__wordmark">CoreFlow <strong>AI</strong></span></a>
+      <div class="profile-menu-wrap" data-profile-menu-wrap>
+  <button class="profile-menu-button" type="button" data-profile-menu-button aria-haspopup="menu" aria-expanded="false" aria-controls="profile-menu" aria-label="Open company profile menu">
+    <span class="profile-trigger-avatar" data-company-avatar aria-hidden="true">CF</span><img class="profile-trigger-logo" data-company-logo alt="Company logo" referrerpolicy="no-referrer" hidden>
+    <span class="profile-menu-button__company" data-company-name title="CoreFlow AI">CoreFlow AI</span>
+    <svg class="profile-menu-button__chevron" aria-hidden="true" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg>
+  </button>
+  <button class="profile-menu-backdrop" type="button" data-profile-backdrop aria-label="Close profile menu" tabindex="-1" aria-hidden="true" hidden></button>
+  <div class="profile-menu" id="profile-menu" data-profile-menu role="menu" aria-label="Company profile" hidden>
+    <span class="profile-menu__grabber" aria-hidden="true"></span>
+    <header class="profile-menu__header" role="presentation">
+      <span class="profile-menu__avatar-wrap"><span class="profile-menu__avatar" data-company-avatar aria-hidden="true">CF</span><img class="profile-menu__logo" data-company-logo alt="Company logo" referrerpolicy="no-referrer" hidden></span>
+      <span class="profile-menu__identity"><strong data-company-name data-profile-company title="CoreFlow AI">CoreFlow AI</strong><span class="profile-menu__email" data-profile-email></span></span>
+    </header>
+    <a class="profile-menu__item" role="menuitem" href="./index.html#settings" data-app-route="settings"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2.5 11.2 4l2-.1.9-1.5 2.2 1.3-.5 1.7 1.4 1.5 1.8-.1v2.6l-1.8.3-.9 1.7.7 1.6-2.2 1.3-1.1-1.3-2 .2-.8 1.6H8.3l-.4-1.8-1.8-.8-1.7.7-1.3-2.2 1.3-1.1-.2-2-1.6-.8V6.2l1.8-.4.8-1.8-.7-1.7 2.2-1.2 1.1 1.3 2-.2.8-1.7Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.3"/><circle cx="10" cy="8.9" r="2.4" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span>Settings</span></a>
+    <div class="profile-menu__divider" role="separator" aria-orientation="horizontal"></div>
+    <button class="profile-menu__item profile-menu__item--danger" role="menuitem" id="logout-button" type="button"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M8 3H4.5A1.5 1.5 0 0 0 3 4.5v11A1.5 1.5 0 0 0 4.5 17H8m4-3 4-4-4-4m4 4H7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg><span>Log out</span></button>
+    <p class="profile-menu__message" data-profile-menu-message role="status" aria-live="polite"></p>
+  </div>
+</div>
     </header>
     <div class="layout">
       <aside class="sidebar" aria-label="Main navigation"><p class="nav-label">WORKSPACE</p>
-        <nav><a href="./index.html"><span class="nav-icon">▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a><a href="./leads.html" data-nav="leads" aria-current="page"><span class="nav-icon">◇</span>Leads</a><a href="./index.html#settings"><span class="nav-icon">⚙</span>Settings</a></nav>
+        <nav><a href="./index.html#dashboard" data-app-route="dashboard"><span class="nav-icon" aria-hidden="true">▦</span>Dashboard<span class="nav-attention-badge" data-attention-count aria-live="polite" hidden></span></a><a href="./leads.html" data-app-route="leads"><span class="nav-icon" aria-hidden="true">◇</span>Leads</a><a href="./index.html#analytics" data-app-route="analytics"><span class="nav-icon" aria-hidden="true">▤</span>Analytics</a><a href="./index.html#settings" data-app-route="settings"><span class="nav-icon" aria-hidden="true">⚙</span>Settings</a></nav>
         <div class="sidebar-foot">Your business, in good flow.</div>
       </aside>
       <main class="main-content detail-main">
@@ -107,7 +125,8 @@
         </div>
       </main>
     </div>
-    <nav class="mobile-nav" aria-label="Main navigation"><a href="./index.html"><span>▦</span>Dashboard<span class="nav-attention-badge" data-attention-count hidden></span></a><a href="./leads.html" data-nav="leads" aria-current="page"><span>◇</span>Leads</a><a href="./index.html#settings"><span>⚙</span>Settings</a></nav>
+    <nav class="mobile-nav" aria-label="Main navigation"><a href="./index.html#dashboard" data-app-route="dashboard"><span aria-hidden="true">▦</span>Dashboard<span class="nav-attention-badge" data-attention-count aria-live="polite" hidden></span></a><a href="./leads.html" data-app-route="leads"><span aria-hidden="true">◇</span>Leads</a><a href="./index.html#analytics" data-app-route="analytics"><span aria-hidden="true">▤</span>Analytics</a><a href="./index.html#settings" data-app-route="settings"><span aria-hidden="true">⚙</span>Settings</a></nav>
+    <footer class="app-footer"><a href="./privacy.html">Privacy</a></footer>
   </div>
 <dialog id="task-compose-dialog" class="task-compose-dialog ui-dialog" aria-labelledby="task-compose-heading">
     <div class="task-compose-dialog__head"><div><h2 id="task-compose-heading" data-task-dialog-title>Schedule follow-up</h2><p data-task-dialog-lead class="muted"></p></div><button class="ui-button ui-button--ghost" type="button" data-task-dialog-close aria-label="Close follow-up dialog">Close</button></div>

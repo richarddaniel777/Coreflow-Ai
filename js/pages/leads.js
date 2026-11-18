@@ -1,14 +1,14 @@
 import { supabase } from '../api/supabase.js';
-import { createLead, deleteLead, getLead, getLeads, updateLead } from '../api/leads.js';
+import { createLead, deleteLead, getLead, getLeadsPage, getUnscoredLeadCandidates, updateLead } from '../api/leads.js';
 import { loadBusinessProfile, subscribeToBusinessProfile } from '../api/businessProfile.js';
-import { getActivitiesForLeads } from '../api/activities.js';
+import { getLeadActivitySummary } from '../api/dashboard.js';
 import { makeElement, renderLeadTable, showPageState } from '../ui/leads.js';
-import { getLeadStatuses } from '../lib/leadStatus.js';
 import { initCsvImport } from './csvImport.js';
-import { refreshAttentionBadge } from '../ui/navigation.js';
+import { initAppNavigation, refreshAttentionBadge } from '../ui/navigation.js';
 import { scoreLead } from '../api/ai.js';
 import { isProfileComplete } from '../lib/businessProfile.js';
 import { LEAD_SOURCES, PREFERRED_CHANNELS, LEAD_STAGES, stageRequiresLostReason } from '../lib/constants.js';
+import { redirectToLogin } from '../lib/authRedirect.js';
 
 const app = document.querySelector('#app');
 const listContainer = document.querySelector('#lead-list');
@@ -34,6 +34,12 @@ let activityMap = new Map();
 let editingLead = null;
 let cancelScoring = false;
 let retryCandidates = [];
+const pagination = document.querySelector('#lead-pagination');
+const listViewStorageKey = 'coreflow-leads-list-view';
+let currentPage = 1;
+let pageSize = 50;
+let totalCount = 0;
+let pendingScrollRestore = null;
 
 function populateSelect(select, options, placeholder) {
   select.replaceChildren();
@@ -64,96 +70,175 @@ function errorText(error) {
   return error?.message || 'Something went wrong. Please try again.';
 }
 
+function currentFilterValues() {
+  return {
+    search: search.value.trim(), stage: stageFilter.value, source: sourceFilter.value,
+    status: statusFilter.value, priority: priorityFilter.value, sort: sortFilter.value, scoreSort: scoreSort.value,
+  };
+}
+
+function saveListView() {
+  const wrapper = listContainer.querySelector('.ui-table-wrap');
+  const state = {
+    ...currentFilterValues(), page: currentPage, pageSize,
+    mainScrollTop: document.querySelector('.main-content')?.scrollTop || 0, listScrollTop: wrapper?.scrollTop || 0,
+  };
+  try { sessionStorage.setItem(listViewStorageKey, JSON.stringify(state)); } catch { /* The list still works without session storage. */ }
+}
+
+function restoreListView() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(listViewStorageKey) || 'null');
+    if (!saved) return;
+    search.value = saved.search || '';
+    stageFilter.value = saved.stage || '';
+    sourceFilter.value = saved.source || '';
+    statusFilter.value = saved.status || '';
+    priorityFilter.value = saved.priority || '';
+    sortFilter.value = saved.sort || '';
+    scoreSort.value = saved.scoreSort || '';
+    currentPage = Math.max(1, Number(saved.page) || 1);
+    pageSize = [25, 50, 100].includes(Number(saved.pageSize)) ? Number(saved.pageSize) : 50;
+    pendingScrollRestore = { mainScrollTop: Number(saved.mainScrollTop) || 0, listScrollTop: Number(saved.listScrollTop) || 0 };
+  } catch { /* Ignore malformed or unavailable saved list state. */ }
+}
+
+function resetFilters() {
+  search.value = '';
+  stageFilter.value = '';
+  sourceFilter.value = '';
+  statusFilter.value = '';
+  sortFilter.value = '';
+  priorityFilter.value = '';
+  scoreSort.value = '';
+  currentPage = 1;
+  saveListView();
+  loadLeads();
+  search.focus();
+}
+
+function renderPagination(pageCount, count) {
+  pagination.replaceChildren();
+  if (!count) return;
+  const from = (currentPage - 1) * pageSize + 1;
+  const to = Math.min(currentPage * pageSize, count);
+  const label = makeElement('span', 'pagination-summary', `Showing ${from} to ${to} of ${count}`);
+  label.setAttribute('aria-live', 'polite');
+  const controls = makeElement('div', 'pagination-controls');
+  const addButton = (text, page, disabled = false, current = false) => {
+    const button = makeElement('button', 'ui-button ui-button--secondary pagination-button', text);
+    button.type = 'button';
+    button.disabled = disabled;
+    button.setAttribute('aria-label', current ? `Page ${page}, current page` : text === 'Previous' || text === 'Next' ? text + ' page' : `Go to page ${page}`);
+    if (current) button.setAttribute('aria-current', 'page');
+    button.addEventListener('click', () => { currentPage = page; saveListView(); loadLeads(); });
+    controls.append(button);
+  };
+  addButton('Previous', Math.max(1, currentPage - 1), currentPage <= 1);
+  let pages = [];
+  if (pageCount <= 7) pages = Array.from({ length: pageCount }, (_v, i) => i + 1);
+  else {
+    pages = [1];
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(pageCount - 1, currentPage + 1);
+    if (start > 2) pages.push('…');
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < pageCount - 1) pages.push('…');
+    pages.push(pageCount);
+  }
+  pages.forEach((page) => {
+    if (page === '…') controls.append(makeElement('span', 'pagination-ellipsis', '…'));
+    else addButton(String(page), page, false, page === currentPage);
+  });
+  addButton('Next', Math.min(pageCount, currentPage + 1), currentPage >= pageCount);
+
+  const sizeLabel = document.createElement('label');
+  sizeLabel.className = 'pagination-size-label';
+  sizeLabel.textContent = 'Rows per page';
+  const size = document.createElement('select');
+  size.className = 'ui-select pagination-size';
+  size.setAttribute('aria-label', 'Rows per page');
+  [25, 50, 100].forEach((value) => {
+    const option = document.createElement('option');
+    option.value = String(value); option.textContent = String(value); option.selected = value === pageSize;
+    size.append(option);
+  });
+  size.addEventListener('change', () => { pageSize = Number(size.value); currentPage = 1; saveListView(); loadLeads(); });
+  sizeLabel.append(size);
+  pagination.append(label, controls, sizeLabel);
+}
+
 async function loadLeads() {
   listContainer.replaceChildren();
+  pagination.replaceChildren();
   showPageState(stateContainer, 'loading', 'Loading your leads…');
   const profileState = document.querySelector('#leads-profile-state');
-  profileState.textContent = 'Loading business profile…';
-  profileState.dataset.kind = 'loading';
+  if (!profileLoaded) {
+    profileState.textContent = 'Loading business profile…';
+    profileState.dataset.kind = 'loading';
+  }
   try {
-    const [leadsResult, profileResult] = await Promise.allSettled([
-      getLeads(),
-      loadBusinessProfile({ forceRefresh: true, source: 'leads' }),
-    ]);
-    if (profileResult.status === 'fulfilled') {
-      profile = profileResult.value;
-      profileLoaded = true;
-      profileState.textContent = '';
-      profileState.dataset.kind = '';
-      document.querySelector('#leads-profile-banner').hidden = isProfileComplete(profile);
-    } else {
-      profile = null;
-      profileLoaded = false;
-      document.querySelector('#leads-profile-banner').hidden = true;
-      profileState.textContent = profileResult.reason?.message || 'Business profile could not be loaded. Try again.';
-      profileState.dataset.kind = 'error';
+    if (!profileLoaded) {
+      try {
+        profile = await loadBusinessProfile({ source: 'leads' });
+        profileLoaded = true;
+        profileState.textContent = '';
+        profileState.dataset.kind = '';
+        document.querySelector('#leads-profile-banner').hidden = isProfileComplete(profile);
+      } catch (profileError) {
+        profile = null;
+        profileState.textContent = profileError?.message || 'Business profile could not be loaded. Try again.';
+        profileState.dataset.kind = 'error';
+      }
     }
-    if (leadsResult.status === 'rejected') throw leadsResult.reason;
-    leads = leadsResult.value;
+    const result = await getLeadsPage({ page: currentPage, pageSize, ...currentFilterValues(), quietAfterDays: profile?.quiet_after_days ?? 5 });
+    totalCount = result.count;
+    const pageCount = Math.ceil(totalCount / pageSize);
+    if (pageCount > 0 && currentPage > pageCount) {
+      currentPage = pageCount;
+      return await loadLeads();
+    }
+    leads = result.data;
     document.querySelectorAll('[data-currency-label]').forEach((label) => { label.textContent = profile?.currency || 'USD'; });
-    const activities = await getActivitiesForLeads(leads.map((lead) => lead.id));
+    const summaries = await getLeadActivitySummary(leads.map((lead) => lead.id));
     activityMap = new Map();
-    activities.forEach((activity) => {
-      const list = activityMap.get(activity.lead_id) || [];
-      list.push(activity);
-      activityMap.set(activity.lead_id, list);
+    summaries.forEach((summary) => {
+      const latest = [];
+      if (summary.last_real_activity_at) latest.push({ type: 'call', occurred_at: summary.last_real_activity_at });
+      if (summary.last_direction) latest.push({ type: 'message', direction: summary.last_direction, occurred_at: summary.last_directional_at });
+      activityMap.set(summary.lead_id, latest);
     });
     stateContainer.replaceChildren();
-    applyFilters();
+    const activeCount = Object.values(currentFilterValues()).filter(Boolean).length;
+    activeFilterCount.textContent = activeCount ? `${activeCount} active ${activeCount === 1 ? 'filter' : 'filters'}` : 'No active filters';
+    const active = activeCount > 0;
+    resetButton.disabled = !active;
+    resetButton.hidden = !active;
+    document.querySelector('#lead-count').textContent = `${totalCount} ${totalCount === 1 ? 'lead' : 'leads'}`;
+    if (!totalCount) {
+      if (active) {
+        const empty = makeElement('div', 'ui-empty');
+        empty.append(makeElement('div', 'ui-empty__icon', '⌕'), makeElement('h3', '', 'No leads match your filters'), makeElement('p', '', 'Try changing your search or filters, or reset to the full list.'));
+        const reset = makeElement('button', 'ui-button ui-button--secondary', 'Reset filters');
+        reset.type = 'button'; reset.addEventListener('click', resetFilters); empty.append(reset); stateContainer.append(empty);
+      } else showPageState(stateContainer, 'empty', 'Keep every enquiry in view by adding your first lead.');
+      return;
+    }
+    renderLeadTable(listContainer, leads, activityMap, profile || { currency: 'USD', quiet_after_days: 5 });
+    renderPagination(pageCount, totalCount);
+    if (pendingScrollRestore) {
+      const main = document.querySelector('.main-content');
+      if (main) main.scrollTop = pendingScrollRestore.mainScrollTop;
+      const wrapper = listContainer.querySelector('.ui-table-wrap');
+      if (wrapper) wrapper.scrollTop = pendingScrollRestore.listScrollTop;
+      pendingScrollRestore = null;
+    }
+    saveListView();
   } catch (error) {
     showPageState(stateContainer, 'error', errorText(error));
     const retry = makeElement('button', 'ui-button ui-button--secondary retry-button', 'Try again');
-    retry.type = 'button';
-    retry.addEventListener('click', loadLeads);
-    stateContainer.append(retry);
+    retry.type = 'button'; retry.addEventListener('click', loadLeads); stateContainer.append(retry);
   }
-}
-function applyFilters() {
-  const activeCount = [search.value.trim(), stageFilter.value, sourceFilter.value, statusFilter.value, priorityFilter.value].filter(Boolean).length;
-  const hasActiveControls = activeCount > 0 || Boolean(sortFilter.value) || Boolean(scoreSort.value);
-  activeFilterCount.textContent = activeCount === 0 ? 'No active filters' : activeCount + (activeCount === 1 ? ' active filter' : ' active filters');
-  resetButton.disabled = !hasActiveControls;
-  resetButton.hidden = !hasActiveControls;
-  const query = search.value.trim().toLowerCase();
-  let filtered = leads.filter((lead) => {
-    const matchesQuery = !query || [lead.name, lead.company, lead.phone, lead.email]
-      .some((value) => String(value || '').toLowerCase().includes(query));
-    const matchesStage = !stageFilter.value || lead.stage === stageFilter.value;
-    const matchesSource = !sourceFilter.value || lead.source === sourceFilter.value;
-    const activities = activityMap.get(lead.id) || [];
-    const leadStatuses = getLeadStatuses(lead, activities, profile?.quiet_after_days ?? 5);
-    const statuses = { needs_reply: leadStatuses.needsReply, gone_quiet: leadStatuses.goneQuiet };
-    const matchesStatus = !statusFilter.value || statuses[statusFilter.value];
-    const priority = lead.ai_analysis?.priority || '';
-    const matchesPriority = !priorityFilter.value || (priorityFilter.value === 'unscored' ? lead.ai_score == null : priority === priorityFilter.value);
-    return matchesQuery && matchesStage && matchesSource && matchesStatus && matchesPriority;
-  });
-  if (sortFilter.value === 'deal_value') filtered = filtered.slice().sort((a, b) => Number(b.deal_value || 0) - Number(a.deal_value || 0));
-  else filtered = filtered.slice().sort((a, b) => new Date(b.last_activity_at || b.created_at).getTime() - new Date(a.last_activity_at || a.created_at).getTime());
-  if (scoreSort.value === 'score_desc') filtered = filtered.slice().sort((a, b) => (b.ai_score ?? -1) - (a.ai_score ?? -1));
-  if (scoreSort.value === 'score_asc') filtered = filtered.slice().sort((a, b) => (a.ai_score ?? 101) - (b.ai_score ?? 101));
-
-  document.querySelector('#lead-count').textContent = String(filtered.length) + (filtered.length === 1 ? ' lead' : ' leads');
-  if (!leads.length) {
-    showPageState(stateContainer, 'empty', 'Keep every enquiry in view by adding your first lead.');
-    listContainer.replaceChildren();
-    return;
-  }
-  if (!filtered.length) {
-    const empty = makeElement('div', 'ui-empty');
-    empty.append(makeElement('div', 'ui-empty__icon', '⌕'));
-    empty.append(makeElement('h3', '', 'No leads match your filters'));
-    empty.append(makeElement('p', '', 'Try changing your search or filters, or reset to the full list.'));
-    const resetEmpty = makeElement('button', 'ui-button ui-button--secondary', 'Reset filters');
-    resetEmpty.type = 'button';
-    resetEmpty.addEventListener('click', resetFilters);
-    empty.append(resetEmpty);
-    stateContainer.replaceChildren(empty);
-    listContainer.replaceChildren();
-    return;
-  }
-  stateContainer.replaceChildren();
-  renderLeadTable(listContainer, filtered, activityMap, profile || { currency: 'USD', quiet_after_days: 5 });
 }
 
 subscribeToBusinessProfile(({ profile: updatedProfile, error: profileError }) => {
@@ -175,22 +260,24 @@ subscribeToBusinessProfile(({ profile: updatedProfile, error: profileError }) =>
   document.querySelectorAll('[data-currency-label]').forEach((label) => { label.textContent = profile.currency || 'USD'; });
   applyFilters();
 });
-function resetFilters() {
-  search.value = '';
-  stageFilter.value = '';
-  sourceFilter.value = '';
-  statusFilter.value = '';
-  sortFilter.value = '';
-  priorityFilter.value = '';
-  scoreSort.value = '';
-  applyFilters();
-  search.focus();
-}
 resetButton.addEventListener('click', resetFilters);
 
-[search, stageFilter, sourceFilter, statusFilter, sortFilter, priorityFilter, scoreSort].forEach((control) => {
-  control.addEventListener(control === search ? 'input' : 'change', applyFilters);
+let searchTimer = 0;
+search.addEventListener('input', () => {
+  window.clearTimeout(searchTimer);
+  searchTimer = window.setTimeout(() => { currentPage = 1; saveListView(); loadLeads(); }, 300);
 });
+[stageFilter, sourceFilter, statusFilter, sortFilter, priorityFilter, scoreSort].forEach((control) => control.addEventListener('change', () => { currentPage = 1; saveListView(); loadLeads(); }));
+listContainer.addEventListener('click', (event) => {
+  if (event.target.closest('.lead-name-link')) saveListView();
+});
+restoreListView();
+
+function applyFilters() {
+  currentPage = 1;
+  saveListView();
+  loadLeads();
+}
 
 async function runScoreBatch(candidates) {
   const button = document.querySelector('#score-all-button');
@@ -286,8 +373,17 @@ async function runScoreBatch(candidates) {
   }
 }
 
-document.querySelector('#score-all-button').addEventListener('click', () => {
-  runScoreBatch(leads.filter((lead) => lead.ai_score == null));
+document.querySelector('#score-all-button').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  document.querySelector('#score-all-progress').textContent = 'Loading unscored leads…';
+  try {
+    await runScoreBatch(await getUnscoredLeadCandidates());
+  } catch (error) {
+    document.querySelector('#score-all-progress').textContent = `Could not load unscored leads: ${errorText(error)}`;
+  } finally {
+    button.disabled = false;
+  }
 });
 document.querySelector('#retry-skipped-button').addEventListener('click', () => {
   runScoreBatch(retryCandidates);
@@ -359,7 +455,7 @@ form.addEventListener('submit', async (event) => {
   setNotice('');
   try {
     if (editingLead) await updateLead(editingLead.id, values, editingLead.stage);
-    else await createLead(values);
+    else { await createLead(values); currentPage = 1; }
     dialog.close();
     setNotice(editingLead ? 'Lead updated.' : 'Lead created.', 'success');
     await loadLeads();
@@ -374,22 +470,6 @@ form.addEventListener('submit', async (event) => {
   }
 });
 
-document.querySelector('#logout-button').addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  button.disabled = true;
-  button.textContent = 'Logging out…';
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    location.replace('./login.html');
-  } catch (error) {
-    setNotice(errorText(error), 'error');
-    button.disabled = false;
-    button.textContent = 'Log out';
-  }
-});
-document.querySelectorAll('[data-nav=leads]').forEach((item) => item.setAttribute('aria-current', 'page'));
-
 initCsvImport({
   button: document.querySelector('#import-csv-button'),
   dialog: document.querySelector('#csv-import-dialog'),
@@ -398,10 +478,10 @@ initCsvImport({
 });
 
 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-if (sessionError || !session) location.replace('./login.html');
+if (sessionError || !session) redirectToLogin('Your session expired, please log in again.');
 else {
   app.hidden = false;
-  document.querySelector('#account-email').textContent = session.user.email || '';
+  initAppNavigation(session.user.email || '');
   await Promise.all([loadLeads(), refreshAttentionBadge()]);
   const editId = new URLSearchParams(location.search).get('edit');
   if (editId) {

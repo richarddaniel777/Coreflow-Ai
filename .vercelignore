@@ -1,0 +1,5 @@
+/js/lib/*.test.html
+/dev/**
+/styleguide.html
+/samples/**
+/supabase/**

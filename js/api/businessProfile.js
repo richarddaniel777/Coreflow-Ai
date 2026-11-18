@@ -1,5 +1,4 @@
 import { supabase } from './supabase.js';
-import { debugProfileState } from '../lib/businessProfile.js';
 
 const allowedFields = [
   'business_name', 'business_type', 'products_services', 'pricing_notes',
@@ -11,8 +10,16 @@ let cachedProfile = null;
 let cachedUserId = null;
 let profileBroadcast = null;
 
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') {
+    cachedProfile = null;
+    cachedUserId = null;
+    notifyProfileChanged(null, new Error('Your session ended. Please sign in again.'));
+  }
+});
+
 function emptyProfile() {
-  return { currency: 'USD', quiet_after_days: 5, products_services: '', ideal_customer: '' };
+  return { currency: 'USD', quiet_after_days: 5, products_services: '', ideal_customer: '', logo_path: null, logo_url: '' };
 }
 
 function notifyProfileChanged(profile, error = null) {
@@ -51,12 +58,10 @@ export async function loadBusinessProfile({ forceRefresh = false, source = 'prof
   if (authError || !user) {
     cachedProfile = null;
     cachedUserId = null;
-    debugProfileState(null, false, source);
     throw new Error('Business profile could not be loaded. Please sign in again and retry.');
   }
 
   if (cachedProfile && cachedUserId === user.id && !forceRefresh) {
-    debugProfileState(cachedProfile, true, source, user.id);
     return cachedProfile;
   }
 
@@ -66,14 +71,80 @@ export async function loadBusinessProfile({ forceRefresh = false, source = 'prof
     .eq('user_id', user.id)
     .maybeSingle();
   if (error) {
-    debugProfileState(null, false, source, user.id);
     throw new Error(`Business profile could not be loaded. ${error.message || 'Check your connection and retry.'}`);
   }
 
   cachedProfile = data || emptyProfile();
+  if (cachedProfile.logo_path) {
+    const { data: signedLogo, error: logoError } = await supabase.storage
+      .from('company-logos')
+      .createSignedUrl(cachedProfile.logo_path, 60 * 60 * 24 * 7);
+    cachedProfile.logo_url = logoError ? '' : signedLogo?.signedUrl || '';
+  } else cachedProfile.logo_url = '';
   cachedUserId = user.id;
-  debugProfileState(cachedProfile, true, source, user.id);
   return cachedProfile;
+}
+
+function broadcastProfileRefresh() {
+  try {
+    profileBroadcast?.postMessage({ type: 'refresh' });
+    localStorage.setItem(refreshKey, `${Date.now()}-${Math.random()}`);
+  } catch { /* Same-tab profile listeners are notified before broadcasting. */ }
+}
+
+export async function uploadBusinessLogo(file) {
+  const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
+  if (!(file instanceof File) || !allowedTypes.has(file.type)) {
+    throw new Error('Choose a PNG, JPG or WebP image.');
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('The logo must be 2 MB or smaller.');
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error('Your session could not be verified. Please sign in again.');
+
+  const logoPath = `${user.id}/company-logo`;
+  const { error: uploadError } = await supabase.storage
+    .from('company-logos')
+    .upload(logoPath, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+  if (uploadError) throw new Error(`Company logo could not be uploaded. ${uploadError.message || 'Please try again.'}`);
+
+  const { data: updated, error: updateError } = await supabase
+    .from('business_profiles')
+    .update({ logo_path: logoPath })
+    .eq('user_id', user.id)
+    .select('*')
+    .maybeSingle();
+  if (updateError) throw new Error(`Logo uploaded, but the business profile could not be updated. ${updateError.message || 'Please try again.'}`);
+
+  if (!updated) {
+    const { error: insertError } = await supabase
+      .from('business_profiles')
+      .insert({ logo_path: logoPath })
+      .select('*')
+      .single();
+    if (insertError?.code === '23505') {
+      const { data: retried, error: retryError } = await supabase
+        .from('business_profiles')
+        .update({ logo_path: logoPath })
+        .eq('user_id', user.id)
+        .select('*')
+        .maybeSingle();
+      if (retryError || !retried) throw new Error(`Logo uploaded, but the business profile could not be saved. ${retryError?.message || insertError.message || 'Please try again.'}`);
+    } else if (insertError) throw new Error(`Logo uploaded, but the business profile could not be created. ${insertError.message || 'Please try again.'}`);
+  }
+
+  let profile;
+  try {
+    profile = await loadBusinessProfile({ forceRefresh: true, source: 'settings-logo-upload' });
+  } catch (refreshError) {
+    notifyProfileChanged(null, refreshError);
+    throw new Error(`Logo was uploaded, but the profile could not be refreshed. ${refreshError.message}`);
+  }
+  notifyProfileChanged(profile);
+  broadcastProfileRefresh();
+  return profile;
 }
 
 export async function saveBusinessProfile(values) {
@@ -133,7 +204,6 @@ export async function saveBusinessProfile(values) {
     // Keep the successful write visible in this tab even if the follow-up read fails.
     cachedProfile = savedProfile;
     cachedUserId = user.id;
-    debugProfileState(null, false, 'settings-save-refresh', user.id);
     notifyProfileChanged(null, refreshError);
     throw new Error(`Business profile was saved, but could not be refreshed. ${refreshError.message}`);
   }

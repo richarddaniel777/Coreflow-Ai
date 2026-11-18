@@ -84,14 +84,17 @@ export function renderQuickActions(container, lead, onCopy) {
     container.append(button);
   };
   if (lead.phone) {
-    const tel = makeElement('a', 'ui-button ui-button--secondary', 'Call');
-    tel.href = 'tel:' + lead.phone.replace(/[^+\d]/g, '');
-    container.append(tel);
+    const phoneNumber = String(lead.phone).trim().replace(/(?!^\+)\D/g, '');
+    if (/^\+?\d{5,15}$/.test(phoneNumber)) {
+      const tel = makeElement('a', 'ui-button ui-button--secondary', 'Call');
+      tel.href = 'tel:' + encodeURIComponent(phoneNumber);
+      container.append(tel);
+    }
     addCopy('phone', lead.phone, 'phone');
   }
-  if (lead.email) {
+  if (lead.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(lead.email).trim())) {
     const email = makeElement('a', 'ui-button ui-button--secondary', 'Email');
-    email.href = 'mailto:' + encodeURIComponent(lead.email);
+    email.href = 'mailto:' + encodeURIComponent(String(lead.email).trim());
     container.append(email);
     addCopy('email', lead.email, 'email');
   }
@@ -100,16 +103,16 @@ export function renderQuickActions(container, lead, onCopy) {
   const telegramUsername = String(lead.social_handle || '').trim().replace(/^@/, '');
   if (isTelegram && /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(telegramUsername)) {
     const telegram = makeElement('a', 'ui-button ui-button--secondary', 'Open Telegram');
-    telegram.href = 'https://t.me/' + telegramUsername;
+    telegram.href = 'https://t.me/' + encodeURIComponent(telegramUsername);
     telegram.target = '_blank';
     telegram.rel = 'noopener noreferrer';
     container.append(telegram);
   }
   if (lead.phone && (lead.preferred_channel === 'whatsapp' || lead.source === 'whatsapp')) {
-    const number = lead.phone.replace(/\D/g, '');
-    if (number) {
+    const number = String(lead.phone).replace(/\D/g, '');
+    if (/^\d{5,15}$/.test(number)) {
       const whatsapp = makeElement('a', 'ui-button ui-button--secondary', 'Open WhatsApp');
-      whatsapp.href = 'https://wa.me/' + number;
+      whatsapp.href = 'https://wa.me/' + encodeURIComponent(number);
       whatsapp.target = '_blank';
       whatsapp.rel = 'noopener noreferrer';
       container.append(whatsapp);

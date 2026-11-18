@@ -76,6 +76,8 @@ export function statusBadges(lead, activities, quietAfterDays) {
 export function renderLeadTable(container, leads, activityMap, options) {
   container.replaceChildren();
   const wrapper = makeElement('div', 'ui-table-wrap');
+  wrapper.tabIndex = 0;
+  wrapper.setAttribute('aria-label', 'Leads table. Scroll horizontally to view all columns.');
   const table = makeElement('table', 'ui-table ui-table--responsive leads-table');
   const thead = makeElement('thead');
   const headRow = makeElement('tr');

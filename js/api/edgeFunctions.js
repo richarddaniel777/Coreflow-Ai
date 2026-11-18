@@ -1,11 +1,8 @@
 import { supabase } from './supabase.js';
-
-const LOGIN_NOTICE_KEY = 'coreflow-auth-redirect-message';
+import { redirectToLogin as navigateToLogin } from '../lib/authRedirect.js';
 
 async function redirectToLogin(message) {
-  try { sessionStorage.setItem(LOGIN_NOTICE_KEY, message); } catch { /* The login page still provides its regular session error handling. */ }
-  try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* The redirect does not depend on local sign-out. */ }
-  window.location.replace(new URL('./login.html', window.location.href).href);
+  return navigateToLogin(message);
 }
 
 async function readErrorBody(error) {
@@ -31,12 +28,6 @@ export async function invokeFunction(name, body) {
   }
 
   const authorizationAttached = Boolean(session?.access_token);
-  console.debug('[CoreFlow AI] Edge Function request', {
-    function_name: name,
-    session_exists: Boolean(session),
-    authorization_attached: authorizationAttached,
-  });
-
   if (!authorizationAttached) {
     await redirectToLogin('Your session expired, please log in again.');
     throw new Error('Your session expired, please log in again.');

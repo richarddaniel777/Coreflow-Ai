@@ -17,6 +17,9 @@
   --color-danger-soft:#fff0ed;
   --color-info:#175cd3;
   --color-info-soft:#eff6ff;
+  --color-overlay:rgba(16,37,31,.4);
+  --shadow-profile-menu:0 18px 44px rgba(16,37,31,.13),0 4px 12px rgba(16,37,31,.05);
+  --shadow-profile-sheet:0 -16px 50px rgba(16,37,31,.15);
   --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
   --space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;
   --space-12:48px;--space-16:64px;
@@ -87,7 +90,7 @@ a:hover{color:var(--color-primary-hover)}
 .ui-table-stack{display:none}
 
 /* Dialog, toast, empty and loading states */
-.ui-dialog{position:relative;inset:auto;margin:0;width:min(100%,520px);max-width:100%;max-height:none;padding:var(--space-6);border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface);color:var(--color-text);box-shadow:0 24px 80px #10251f30}
+.ui-dialog{position:fixed;inset:0;margin:auto;width:min(100%,520px);max-width:100%;max-height:calc(100dvh - 32px);overflow-y:auto;padding:var(--space-6);border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface);color:var(--color-text);box-shadow:0 24px 80px #10251f30}
 .ui-dialog::backdrop{background:#10251f66}
 .ui-dialog__actions{display:flex;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-6)}
 .ui-toast{display:flex;align-items:flex-start;gap:var(--space-3);max-width:440px;padding:var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);box-shadow:0 8px 24px #10251f12;font-size:var(--font-size-sm)}
@@ -100,6 +103,10 @@ a:hover{color:var(--color-primary-hover)}
 .ui-empty p{max-width:44ch;margin:0;color:var(--color-muted);font-size:var(--font-size-sm);line-height:1.55}
 .ui-loading{display:flex;align-items:center;gap:var(--space-3);color:var(--color-muted);font-size:var(--font-size-sm)}
 .ui-spinner{display:inline-block;flex:none;border-color:var(--color-primary);border-right-color:transparent}
+.app-footer{margin-top:var(--space-8);padding-block:var(--space-4);border-top:1px solid var(--color-border);font-size:var(--font-size-xs)}
+.privacy-card{line-height:1.6}
+.privacy-card p{color:var(--color-muted)}
+.load-more-leads{display:flex;width:min(100%,280px);margin:var(--space-4) auto}
 @keyframes ui-spin{to{transform:rotate(360deg)}}
 
 .styleguide-page{background:var(--color-background)}
@@ -126,3 +133,13 @@ a:hover{color:var(--color-primary-hover)}
   .ui-table--responsive .ui-table-stack{display:inline}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Scrollbars stay hidden while scroll containers retain native scrolling. */
+.scroll-hidden{position:relative;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
+.scroll-hidden::-webkit-scrollbar{display:none;width:0;height:0}
+.scroll-hidden[data-scroll-top]::before,.scroll-hidden[data-scroll-bottom]::after{position:absolute;z-index:4;left:0;right:0;height:24px;pointer-events:none;content:''}
+.scroll-hidden[data-scroll-top]::before{top:0;background:linear-gradient(to bottom,var(--scroll-hint-color,var(--color-surface)),transparent)}
+.scroll-hidden[data-scroll-bottom]::after{bottom:0;background:linear-gradient(to top,var(--scroll-hint-color,var(--color-surface)),transparent)}
+.profile-menu.scroll-hidden{position:absolute}
+.ui-dialog.scroll-hidden,.lead-editor-dialog.scroll-hidden,.csv-dialog.scroll-hidden,.task-compose-dialog.scroll-hidden{position:fixed}
+@media(max-width:600px){.profile-menu.scroll-hidden{position:fixed}}

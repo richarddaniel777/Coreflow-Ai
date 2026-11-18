@@ -1,1 +1,7 @@
 project_id = "hjihroymrswogbuwgzea"
+
+[functions.score-lead]
+verify_jwt = true
+
+[functions.draft-message]
+verify_jwt = true

@@ -10,12 +10,13 @@ import { toneForStage, ACTIVITY_TYPES, channelsForActivityType } from '../lib/co
 import { renderLeadDetails, renderQuickActions, renderTimeline } from '../ui/leadDetail.js';
 import { renderFollowupTasks } from '../ui/followups.js';
 import { createTaskController } from './taskController.js';
-import { refreshAttentionBadge } from '../ui/navigation.js';
+import { initAppNavigation, refreshAttentionBadge } from '../ui/navigation.js';
 import { scoreLead } from '../api/ai.js';
 import { analysisIsStale, renderAiAnalysis } from '../ui/aiAnalysis.js';
 import { isProfileComplete } from '../lib/businessProfile.js';
 import { draftMessage } from '../api/messageWriter.js';
 import { ACTIVITY_CHANNELS } from '../lib/constants.js';
+import { redirectToLogin } from '../lib/authRedirect.js';
 
 const app = document.querySelector('#app');
 const content = document.querySelector('#detail-content');
@@ -286,9 +287,10 @@ function updateDraftOpenLink() {
   const body = state.body.trim();
   const content = [subject, body].filter(Boolean).join('\n\n');
   if (state.channel === 'email') {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(lead.email || '').trim())) return;
     link.hidden = false;
     link.textContent = 'Open email app';
-    link.href = 'mailto:' + encodeURIComponent(lead.email || '') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    link.href = 'mailto:' + encodeURIComponent(String(lead.email).trim()) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
     link.onclick = (event) => {
       if (link.href.length > 1800) {
         event.preventDefault();
@@ -298,22 +300,25 @@ function updateDraftOpenLink() {
   } else if (state.channel === 'whatsapp' && lead.phone) {
     const phone = String(lead.phone).replace(/\D/g, '');
     if (phone) {
+      if (!/^\d{5,15}$/.test(phone)) return;
       link.hidden = false;
       link.textContent = 'Open WhatsApp';
-      link.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(content);
+      link.href = 'https://wa.me/' + encodeURIComponent(phone) + '?text=' + encodeURIComponent(content);
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
     }
   } else if (state.channel === 'phone' && lead.phone) {
+    const phone = String(lead.phone).trim().replace(/(?!^\+)\D/g, '');
+    if (!/^\+?\d{5,15}$/.test(phone)) return;
     link.hidden = false;
     link.textContent = 'Call';
-    link.href = 'tel:' + String(lead.phone).replace(/[^\d+]/g, '');
+    link.href = 'tel:' + encodeURIComponent(phone);
   }
 }
 function growDraftBody() {
   const body = document.querySelector('#draft-body');
-  body.style.height = 'auto';
-  body.style.height = Math.max(body.scrollHeight, 120) + 'px';
+  const estimatedLines = Math.ceil(body.value.length / 88);
+  body.rows = Math.max(5, body.value.split('\n').length + estimatedLines - 1);
 }
 function renderMessageWriter() {
   const state = messageWriterState;
@@ -851,20 +856,6 @@ interactionForm.addEventListener('submit', async (event) => {
     button.textContent = 'Log interaction';
   }
 });
-document.querySelector('#logout-button').addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  button.disabled = true;
-  button.textContent = 'Logging out…';
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    location.replace('./login.html');
-  } catch (error) {
-    setNotice(errorText(error), 'error');
-    button.disabled = false;
-    button.textContent = 'Log out';
-  }
-});
 document.querySelector('#activity-back').addEventListener('click', () => location.href = './leads.html');
 taskController = createTaskController({
   dialog: document.querySelector('#task-compose-dialog'),
@@ -899,17 +890,15 @@ scheduleTaskForm.addEventListener('submit', async (event) => {
   } catch (error) { setTaskNotice(error?.message || 'Follow-up could not be scheduled.', 'error'); }
   finally { button.disabled = false; button.classList.remove('is-loading'); button.textContent = 'Schedule follow-up'; }
 });
-document.querySelectorAll('[data-nav=leads]').forEach((item) => item.setAttribute('aria-current', 'page'));
-
 window.addEventListener('pagehide', () => resetMessageWriter({ focus: false }));
 window.addEventListener('pageshow', (event) => {
   if (event.persisted && lead) resetMessageWriter({ focus: false });
 });
 
 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-if (sessionError || !session) location.replace('./login.html');
+if (sessionError || !session) redirectToLogin('Your session expired, please log in again.');
 else {
   app.hidden = false;
-  document.querySelector('#account-email').textContent = session.user.email || '';
+  initAppNavigation(session.user.email || '');
   await loadDetail();
 }

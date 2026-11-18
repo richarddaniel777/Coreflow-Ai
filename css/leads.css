@@ -87,8 +87,9 @@
   .activity-entry__header time{text-align:left}
 }
 @media(max-width:420px){
-  .lead-filters{grid-template-columns:1fr}
-  .filter-search{grid-column:auto}
+  /* Keep the filter form compact on a 400px phone; search gets the full row. */
+  .lead-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .filter-search{grid-column:1/-1}
   .leads-title-row{align-items:flex-start;flex-direction:column}
   .leads-title-row>.ui-button{margin-top:0}
   .detail-grid{grid-template-columns:1fr}
@@ -100,3 +101,79 @@
 .lead-filter-summary{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);min-height:44px;padding-inline:var(--space-1);color:var(--color-muted);font-size:var(--font-size-xs)}
 .lead-filter-summary .ui-button{flex:none}
 @media(max-width:680px){.lead-filter-summary{padding-inline:var(--space-2)}}
+.leads-results{display:flex;flex-direction:column;min-width:0;min-height:0}.leads-results #lead-list{min-width:0}.leads-results .ui-table-wrap{max-height:min(62dvh,720px);overflow:auto;overscroll-behavior:contain}.leads-table thead{position:sticky;top:0;z-index:2}.leads-table th{background:#f7faf9}.leads-pagination{position:sticky;bottom:-1px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap;min-height:64px;margin-top:var(--space-2);padding:var(--space-2) var(--space-3);border:1px solid var(--color-border);border-radius:var(--radius-md);background:#fff;box-shadow:0 -5px 18px #17352d0d}.pagination-summary{color:var(--color-muted);font-size:var(--font-size-xs);white-space:nowrap}.pagination-controls{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}.pagination-button{min-width:44px;min-height:44px;padding-inline:10px}.pagination-button[aria-current=page]{border-color:var(--color-primary);background:var(--color-primary-soft);color:var(--color-primary-hover);font-weight:800}.pagination-ellipsis{min-width:20px;text-align:center;color:var(--color-muted)}.pagination-size-label{display:flex;align-items:center;gap:8px;color:var(--color-muted);font-size:var(--font-size-xs);white-space:nowrap}.pagination-size{width:auto;min-width:76px;min-height:44px;padding:8px}.lead-editor-dialog,.csv-dialog{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}.detail-main .message-writer,.detail-main .ai-score-card{max-height:calc(100dvh - 140px);overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:680px){.leads-results .ui-table-wrap{max-height:54dvh}.leads-pagination{bottom:0;justify-content:center;gap:8px;padding:8px}.pagination-summary{width:100%;text-align:center}.pagination-controls{width:100%;gap:3px}.pagination-button{min-width:40px;padding-inline:7px;font-size:12px}.pagination-size-label{justify-content:center;width:100%}.detail-main .message-writer,.detail-main .ai-score-card{max-height:calc(100dvh - 120px)}}
+
+/* iPhone-sized layouts: keep cards, controls, and actions inside the viewport. */
+.profile-menu__identity{min-width:0;max-width:100%}
+.profile-menu__identity strong,.profile-menu__email{max-width:100%;overflow-wrap:anywhere}
+.leads-results,.leads-results #lead-list,.leads-results .ui-table-wrap{width:100%;min-width:0}
+.leads-results .ui-table-wrap{overscroll-behavior:contain}
+.ui-table--responsive td{min-width:0;overflow-wrap:anywhere}
+.ui-table--responsive .lead-name-link{max-width:100%;min-width:0;overflow-wrap:anywhere}
+.lead-badges{min-width:0}
+.leads-pagination{width:100%;box-sizing:border-box}
+@media(max-width:680px){
+  .detail-actions{width:100%;justify-content:flex-start}
+  .detail-actions .ui-button{flex:1 1 132px;max-width:100%}
+  .detail-actions #detail-status{flex:0 0 auto}
+}
+@media(max-width:420px){
+  .leads-main,.detail-main{padding-inline:14px}
+  .leads-title-row{width:100%;min-width:0}
+  .lead-title-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}
+  .lead-title-actions .ui-button{min-width:0;padding-inline:8px}
+  .lead-filters{width:100%;padding:12px}
+  .ui-table--responsive tr{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:10px;gap:8px}
+  .ui-table--responsive td{padding:4px;font-size:12px}
+  .ui-table--responsive td::before{font-size:9px}
+  .leads-pagination{gap:6px;padding:8px 6px}
+  .pagination-controls{gap:2px}
+  .pagination-button{min-width:36px;min-height:40px;padding-inline:5px}
+  .pagination-size-label{font-size:11px}
+  .detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .detail-actions #detail-status{grid-column:1/-1;justify-self:start}
+  .detail-actions .ui-button{width:100%;min-width:0;padding-inline:8px;font-size:12px}
+}
+
+/* Final narrow-screen overrides: let lead cards participate in the page's
+   scroll, and keep the mobile controls comfortably inside a 400px viewport. */
+@media(max-width:420px){
+  .lead-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lead-filters .filter-search{grid-column:1/-1}
+  .leads-results .ui-table-wrap{max-height:none;overflow:visible}
+  .leads-pagination{position:sticky;bottom:0;max-width:100%;}
+  .pagination-controls .pagination-button[aria-label^="Go to page"]:not([aria-current="page"]),
+  .pagination-controls .pagination-ellipsis{display:none}
+}
+@media(max-width:360px){
+  .lead-filters{grid-template-columns:minmax(0,1fr)}
+  .lead-filters .filter-search{grid-column:auto}
+}
+
+/* On phones keep the Leads table as a real table inside its own horizontal
+   scroller. This preserves readable columns without widening the page. */
+@media(max-width:640px){
+  .leads-results,.leads-results #lead-list,.leads-results .ui-table-wrap{width:100%;max-width:100%;min-width:0}
+  .leads-results .ui-table-wrap{max-height:none;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
+  .leads-table{display:table;width:860px;min-width:860px;table-layout:fixed}
+  .leads-table thead{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;white-space:normal}
+  .leads-table tbody{display:table-row-group;width:auto;padding:0}
+  .leads-table tr{display:table-row;margin:0;padding:0;border:0;border-radius:0}
+  .leads-table th,.leads-table td{display:table-cell;min-width:0;padding:var(--space-3) var(--space-2);vertical-align:middle;overflow-wrap:anywhere}
+  .leads-table td::before{display:none;content:none}
+  .leads-table th:nth-child(1),.leads-table td:nth-child(1){width:170px}
+  .leads-table th:nth-child(2),.leads-table td:nth-child(2){width:105px}
+  .leads-table th:nth-child(3),.leads-table td:nth-child(3){width:100px}
+  .leads-table th:nth-child(4),.leads-table td:nth-child(4){width:105px}
+  .leads-table th:nth-child(5),.leads-table td:nth-child(5){width:110px}
+  .leads-table th:nth-child(6),.leads-table td:nth-child(6){width:120px}
+  .leads-table th:nth-child(7),.leads-table td:nth-child(7){width:150px}
+  .leads-table .lead-status-cell{min-width:0}
+}
+
+@media(max-width:680px){
+  .leads-title-row{align-items:flex-start;flex-direction:column;min-width:0}
+  .lead-title-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:var(--space-2)}
+  .lead-title-actions .ui-button{min-width:0;padding-inline:var(--space-2)}
+}
