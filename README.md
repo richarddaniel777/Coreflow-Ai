@@ -5,7 +5,7 @@ Static, mobile-first sales and customer management for small businesses. The fro
 ## Setup
 
 1. Create a Supabase project and copy its project URL and publishable/anon key into `js/config.js` (`SUPABASE_URL` and `SUPABASE_ANON_KEY`). These browser credentials are public; never put a service-role key or AI key in frontend files.
-2. In Supabase SQL Editor, run every file in `supabase/migrations` in numeric order: `001_init.sql`, `002_fixes.sql`, `003_more_channels.sql`, `004_dashboard_views.sql`, `005_ai_usage.sql`, `006_harden_ai_quota.sql`, then `007_company_logos.sql`. Review each migration before running it; `006_harden_ai_quota.sql` caps each supported AI function at 50 successful calls per user per database day.
+2. In Supabase SQL Editor, run every file in `supabase/migrations` in numeric order: `001_init.sql`, `002_fixes.sql`, `003_more_channels.sql`, `004_dashboard_views.sql`, `005_ai_usage.sql`, `006_harden_ai_quota.sql`, `007_company_logos.sql`, then `008_sales_analytics.sql`. Review each migration before running it; `006_harden_ai_quota.sql` caps each supported AI function at 50 successful calls per user per database day.
 3. Install/link the Supabase CLI for deployment:
 
    ```powershell

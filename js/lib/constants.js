@@ -54,6 +54,24 @@ export const ACTIVITY_TYPES = [
   { value: 'quotation_sent', label: 'Quotation sent' },
 ];
 
+export const ANALYTICS_DEFINITIONS = {
+  total_leads: { label: 'Total leads', tooltip: 'Leads created during the selected date range.' },
+  open_leads: { label: 'Open leads', tooltip: 'Leads whose stage is not won or lost.' },
+  qualified_leads: { label: 'Qualified leads', tooltip: 'Leads in quoted, negotiating or won stage, or with an AI score of at least 70.' },
+  won_count: { label: 'Won', tooltip: 'Leads created in the selected range that are currently marked won.' },
+  won_value: { label: 'Won value', tooltip: 'Sum of deal value for won leads in the selected date range.' },
+  lost_count: { label: 'Lost', tooltip: 'Leads created in the selected range that are currently marked lost.' },
+  conversion_rate: { label: 'Closed deal conversion', tooltip: 'Won leads divided by won plus lost leads. Shown as a dash when there are no closed deals.' },
+  win_rate: { label: 'Win rate', tooltip: 'Won leads divided by all leads in the selected date range.' },
+  open_pipeline_value: { label: 'Open pipeline value', tooltip: 'Sum of deal value for leads not marked won or lost.' },
+  overdue_tasks: { label: 'Overdue follow-ups', tooltip: 'Incomplete tasks due before your local today, on open leads created in the selected range.' },
+  needs_reply_count: { label: 'Needs reply', tooltip: 'Open leads created in the selected range whose most recent activity with a direction set is inbound.' },
+  per_stage: { label: 'Pipeline funnel', tooltip: 'Lead counts and deal value by stage. Open means the stage is not won or lost.' },
+  per_source: { label: 'By source', tooltip: 'Lead counts, won leads and won divided by leads for each enquiry source.' },
+  per_channel: { label: 'By preferred channel', tooltip: 'Lead counts, won leads and won divided by leads for each preferred channel.' },
+  lost_reasons: { label: 'Lost reasons', tooltip: 'Reasons recorded for leads marked lost.' },
+};
+
 const SOURCE_LABELS = new Map(LEAD_SOURCES.map(({ value, label }) => [value, label]));
 const CHANNEL_LABELS = new Map(ACTIVITY_CHANNELS.map(({ value, label }) => [value, label]));
 const STAGE_LABELS = new Map(LEAD_STAGES.map(({ value, label }) => [value, label]));

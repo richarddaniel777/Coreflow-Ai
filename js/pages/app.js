@@ -7,6 +7,7 @@ import { isProfileComplete } from '../lib/businessProfile.js';
 import { renderTodayDashboard } from '../ui/dashboard.js';
 import { initAppNavigation, setAttentionBadge, updateActiveNavigation } from '../ui/navigation.js';
 import { createTaskController } from './taskController.js';
+import { initAnalyticsPage } from './analytics.js';
 import { redirectToLogin } from '../lib/authRedirect.js';
 
 const { data: { session }, error } = await supabase.auth.getSession();
@@ -193,6 +194,7 @@ const taskController = createTaskController({
   onChanged: () => loadDashboard(false),
   showNotice: setMessage,
 });
+const analyticsPage = initAnalyticsPage();
 
 function renderRoute(initial = false) {
   const route = updateActiveNavigation();
@@ -201,6 +203,7 @@ function renderRoute(initial = false) {
   document.querySelector('#analytics-page').hidden = route !== 'analytics';
   if (route === 'dashboard') loadDashboard(initial);
   if (route === 'settings') loadSettings();
+  if (route === 'analytics') analyticsPage.load();
 }
 window.addEventListener('hashchange', () => renderRoute(false));
 
