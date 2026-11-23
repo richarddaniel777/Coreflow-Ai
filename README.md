@@ -31,10 +31,10 @@ Static, mobile-first sales and customer management for small businesses. The fro
 7. Serve the site locally from the repository root. With Python installed:
 
    ```powershell
-   python -m http.server 5500
+   node serve-local.mjs 5500
    ```
 
-   Open `http://localhost:5500/login.html`. Do not open HTML files directly from disk. The sample CSV, style guide, and no-framework test pages are for local development and are excluded from Vercel deployment.
+   Open `http://localhost:5500/` for the public landing page or `http://localhost:5500/login.html` to sign in. The authenticated app remains at `http://localhost:5500/index.html`. Do not open HTML files directly from disk. The sample CSV, style guide, and no-framework test pages are for local development and are excluded from Vercel deployment.
 8. Deploy the repository as a static Vercel project with the repository root as the project root and no build command. `vercel.json` configures clean URLs and security headers. Verify that the deployed hostname is included in `ALLOWED_ORIGINS` and Supabase Auth redirect URLs.
 
 ## Local checks
