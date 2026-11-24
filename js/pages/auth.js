@@ -113,7 +113,7 @@ form.addEventListener('submit', async (event) => {
     setMessage('Account created. Check your email to confirm your address, then log in.', 'success');
     return;
   }
-  location.replace('./dashboard');
+  location.replace('/index.html');
 });
 
 forgotButton.addEventListener('click', async () => {
@@ -143,7 +143,7 @@ try {
   sessionStorage.removeItem('coreflow-auth-redirect-message');
 } catch { /* Continue with the regular login state if storage is unavailable. */ }
 const { data: { session } } = await supabase.auth.getSession();
-if (session && !resetComplete && !sessionNotice) location.replace('./dashboard');
+if (session && !resetComplete && !sessionNotice) location.replace('/index.html');
 renderMode();
 if (resetComplete) setMessage('Your password has been updated. You can log in with your new password.', 'success');
 else if (sessionNotice) setMessage(sessionNotice, 'error');
