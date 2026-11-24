@@ -29,6 +29,9 @@ const server = createServer(async (request, response) => {
   try { pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname); }
   catch { response.writeHead(400).end('Bad request'); return; }
   if (pathname === '/') pathname = '/landing.html';
+  else if (pathname === '/login') pathname = '/login.html';
+  else if (pathname === '/signup') pathname = '/login.html';
+  else if (pathname === '/dashboard') pathname = '/index.html';
 
   const target = path.resolve(root, `.${pathname}`);
   if (target !== root && !target.startsWith(root + path.sep)) {

@@ -93,7 +93,7 @@ form.addEventListener('submit', async (event) => {
       submit.textContent = 'Update password';
       return;
     }
-    location.replace('./login.html?password=updated');
+    location.replace('/login?password=updated');
   } catch (error) {
     setMessage(passwordError(error), 'error');
     submit.disabled = false;

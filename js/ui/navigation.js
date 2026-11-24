@@ -7,6 +7,7 @@ import { initScrollHints } from '../lib/scrollHints.js';
 
 export function currentAppRoute() {
   const page = window.location.pathname.split('/').pop()?.toLowerCase() || 'index.html';
+  if (page === 'dashboard') return 'dashboard';
   if (page === 'leads.html' || page === 'lead.html') return 'leads';
   if (page === 'index.html' || page === '') {
     const route = window.location.hash.slice(1).toLowerCase();
@@ -145,7 +146,7 @@ function initProfileMenu(userEmail) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      window.location.replace('./login.html');
+      window.location.replace('/login');
     } catch {
       if (message) message.textContent = 'Could not log out. Check your connection and try again.';
       logout.disabled = false;

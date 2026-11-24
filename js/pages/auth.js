@@ -11,7 +11,7 @@ const modeButtons = document.querySelectorAll('[data-mode]');
 const forgotButton = document.querySelector('#forgot-password-link');
 const forgotRow = document.querySelector('#forgot-row');
 const passwordRule = document.querySelector('#password-rule');
-let mode = new URLSearchParams(location.search).get('mode') === 'signup' ? 'signup' : 'login';
+let mode = new URLSearchParams(location.search).get('mode') === 'signup' || location.pathname.replace(/\/$/, '') === '/signup' ? 'signup' : 'login';
 
 function setMessage(text, kind = '') {
   message.textContent = text;
@@ -113,7 +113,7 @@ form.addEventListener('submit', async (event) => {
     setMessage('Account created. Check your email to confirm your address, then log in.', 'success');
     return;
   }
-  location.replace('./index.html');
+  location.replace('./dashboard');
 });
 
 forgotButton.addEventListener('click', async () => {
@@ -143,7 +143,7 @@ try {
   sessionStorage.removeItem('coreflow-auth-redirect-message');
 } catch { /* Continue with the regular login state if storage is unavailable. */ }
 const { data: { session } } = await supabase.auth.getSession();
-if (session && !resetComplete && !sessionNotice) location.replace('./index.html');
+if (session && !resetComplete && !sessionNotice) location.replace('./dashboard');
 renderMode();
 if (resetComplete) setMessage('Your password has been updated. You can log in with your new password.', 'success');
 else if (sessionNotice) setMessage(sessionNotice, 'error');
