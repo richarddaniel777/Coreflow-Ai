@@ -8,7 +8,7 @@ import { initScrollHints } from '../lib/scrollHints.js';
 export function currentAppRoute() {
   const page = window.location.pathname.split('/').pop()?.toLowerCase() || 'index.html';
   if (page === 'dashboard') return 'dashboard';
-  if (page === 'leads.html' || page === 'lead.html') return 'leads';
+  if (['leads', 'leads.html', 'lead', 'lead.html'].includes(page)) return 'leads';
   if (page === 'index.html' || page === '') {
     const route = window.location.hash.slice(1).toLowerCase();
     return ['settings', 'analytics'].includes(route) ? route : 'dashboard';
