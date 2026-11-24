@@ -3,6 +3,7 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/", "destination": "/landing.html" },
+    { "source": "/landing", "destination": "/landing.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/signup", "destination": "/login.html?mode=signup" },
     { "source": "/dashboard", "destination": "/index.html" }
